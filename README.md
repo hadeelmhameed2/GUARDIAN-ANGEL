@@ -1,0 +1,53 @@
+# Guardian Angel 👼
+> **Empowerment through discretion. A stealth-safety application for women.**
+
+Guardian Angel is a mobile application designed to provide a safe space for women in high-risk environments. On the surface, it appears and functions as a fully operational, standard calculator. However, through a discreet authentication process, it unlocks a comprehensive safety suite.
+
+---
+
+## 📱 Features
+
+### 1. The Stealth Mask (Calculator UI)
+The app opens to a fully functional calculator. Only by entering a specific numerical code (e.g., `1234=`) does the hidden safety dashboard unlock.
+
+### 2. Traffic Light Assessment 🚦
+A real-time behavioral indicator system that helps users evaluate their current situation. 
+* **Green:** Low risk, focus on empowerment.
+* **Yellow:** Warning signs detected, preparation mode.
+* **Red:** High risk, immediate access to emergency protocols.
+* *Technical Note:* Implements a **Reverse Scoring Logic** to translate behavioral indicators into actionable risk levels.
+
+### 3. Exit Fund Vault 💰
+A secure, encrypted digital wallet designed to help users manage their financial independence discreetly, away from monitoring eyes.
+
+### 4. Shake-to-Hide (The Discretion Engine) 🪄
+Security is most effective when it’s instinctive. In high-pressure situations, searching for a "close" button isn't always possible.
+
+
+
+**How it works:**
+* **Instant Trigger:** Utilizing the device's **Accelerometer** via `expo-sensors`, the app detects rapid, specific movement.
+* **Seamless Transition:** Once a shake is detected, the UI instantly resets to the calculator's "safe state," hiding all sensitive data in milliseconds.
+* **Privacy First:** No camera or microphone permissions are required, maintaining the app's stealth profile and protecting user trust.
+
+---
+
+## 🛠 Tech Stack
+
+* **Framework:** React Native with Expo (Managed Workflow).
+* **Language:** TypeScript for robust, type-safe code.
+* **Sensors:** `expo-sensors` (Accelerometer) for gesture detection.
+* **Security:** `expo-secure-store` for encrypted data persistence.
+* **Navigation:** React Navigation (Stack & Tab navigation).
+
+---
+
+## 🚀 Future Roadmap (WIP)
+
+- [x] Core Stealth Calculator UI.
+- [x] Traffic Light Assessment Logic.
+- [wip] Shake-to-Hide Integration.
+- [ ] Encrypted Evidence Vault (Cloud-based backup).
+- [ ] Emergency Contact Quick-Dial (Stealth mode).
+
+---
