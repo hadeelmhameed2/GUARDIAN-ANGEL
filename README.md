@@ -23,7 +23,7 @@ A secure, encrypted digital wallet designed to help users manage their financial
 ### 4. Shake-to-Hide (The Discretion Engine) 🪄
 Security is most effective when it’s instinctive. In high-pressure situations, searching for a "close" button isn't always possible.
 
-
+![Shake to Hide Demo](./assets/shake-demo.gif)
 
 **How it works:**
 * **Instant Trigger:** Utilizing the device's **Accelerometer** via `expo-sensors`, the app detects rapid, specific movement.
