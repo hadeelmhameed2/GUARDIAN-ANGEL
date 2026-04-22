@@ -51,8 +51,7 @@ A minimalist, English-interfaced directory providing access to critical Hebrew-l
 
 - [x] Core Stealth Calculator UI.
 - [x] Traffic Light Assessment Logic.
-- [wip] Shake-to-Hide Integration.
-- [ ] Encrypted Evidence Vault (Cloud-based backup).
-- [ ] Emergency Contact Quick-Dial (Stealth mode).
-
+- [x] Shake-to-Hide Integration.
+- [x] Emergency Contact Quick-Dial (Stealth mode).
+- [wip] **UI/UX Refinement:** Polishing the stealth-aesthetic and visual identity to ensure a professional, seamless, and intuitive user experience.
 ---
