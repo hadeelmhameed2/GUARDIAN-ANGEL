@@ -30,6 +30,11 @@ Security is most effective when it’s instinctive. In high-pressure situations,
 * **Seamless Transition:** Once a shake is detected, the UI instantly resets to the calculator's "safe state," hiding all sensitive data in milliseconds.
 * **Privacy First:** No camera or microphone permissions are required, maintaining the app's stealth profile and protecting user trust.
 
+### 🏥 Resource & Shelter Directory
+A minimalist, English-interfaced directory providing access to critical Hebrew-language resources.
+* **Internationalized UI:** All controls and navigation are in English for a professional, clean look.
+* **Minimalist Dashboard:** Emergency triggers (Police, 118) are icon-based only, removing identifying text for enhanced stealth.
+* **Dual-Action Header:** Features a "Back to App" navigation and an "Emergency Exit" panic button.
 ---
 
 ## 🛠 Tech Stack
