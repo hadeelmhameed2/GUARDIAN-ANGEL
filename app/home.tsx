@@ -165,6 +165,7 @@ export default function HomeScreen() {
       Alert.alert('Unavailable', 'Dialer is not available on this device.');
       return;
     }
+    // Do not change routes here: user should stay on current screen after dialing/canceling.
     await Linking.openURL(telUrl);
   };
 
@@ -340,9 +341,18 @@ export default function HomeScreen() {
           {isUnlocked ? (
             <View style={styles.emergencyActionsBottom}>
               <TouchableOpacity
-                style={[styles.emergencyActionButton, styles.primaryEmergencyButton]}
+                style={[styles.hotlineButton, styles.primaryEmergencyButton]}
+                accessibilityRole="button"
+                accessibilityLabel="Call Police 100"
                 onPress={() => void openDialer('100', 'Unable to prepare the police call.')}>
-                <Text style={styles.emojiActionText}>🚨</Text>
+                <Text style={styles.hotlineEmoji}>🚨</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.hotlineButton, styles.hotline118Button]}
+                accessibilityRole="button"
+                accessibilityLabel="Call Emergency Hotline 118"
+                onPress={() => void openDialer('118', 'Unable to prepare the emergency hotline call.')}>
+                <Text style={styles.hotlineEmoji}>🛡️</Text>
               </TouchableOpacity>
               <View key={`emoji-row-${emojiRowVersion}`} style={styles.supportEmojiRow}>
                 {trustedContacts[0]?.phone ? (
@@ -376,6 +386,10 @@ export default function HomeScreen() {
 
           <TouchableOpacity style={styles.mainButton} onPress={() => router.push('/exit_fund')}>
             <Text style={styles.mainButtonText}>Exit Fund</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.mainButton} onPress={() => router.push('/shelters')}>
+            <Text style={styles.mainButtonText}>Shelter Directory</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -602,8 +616,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  hotlineButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
   primaryEmergencyButton: {
     backgroundColor: '#b91c1c',
+    borderColor: '#dc2626',
+  },
+  hotline118Button: {
+    backgroundColor: '#0f766e',
+    borderColor: '#14b8a6',
   },
   secondaryEmergencyButton: {
     backgroundColor: '#1f2937',
@@ -617,6 +644,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   emojiActionText: {
+    fontSize: 24,
+  },
+  hotlineEmoji: {
     fontSize: 24,
   },
   emergencyActionsBottom: {
