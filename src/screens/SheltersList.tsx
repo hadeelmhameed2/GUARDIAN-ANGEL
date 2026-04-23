@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Phone, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Linking,
   SafeAreaView,
   StyleSheet,
@@ -13,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { getCurrentStatus, type RiskState } from '@/app/risk-status';
 import sheltersData from '@/data/shelters.json';
 
 type Shelter = {
@@ -25,12 +28,23 @@ type Shelter = {
 };
 
 const SHELTERS = sheltersData as Shelter[];
+const PAGE_GRADIENTS: Record<RiskState, [string, string, string]> = {
+  red: ['#FFD6D6', '#FAF3E0', '#FAF3E0'],
+  yellow: ['#FFE8D1', '#FAF3E0', '#FAF3E0'],
+  green: ['#E8F5E9', '#FAF3E0', '#FAF3E0'],
+};
+const BRANCH_TINT: Record<RiskState, string> = {
+  red: '#9f4b4b',
+  yellow: '#a8692e',
+  green: '#4d6d52',
+};
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase('he-IL');
 
 export default function SheltersListScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const currentStatus = getCurrentStatus();
 
   const filtered = useMemo(() => {
     const q = normalize(query);
@@ -45,7 +59,7 @@ export default function SheltersListScreen() {
   };
 
   const handleBackToDashboard = () => {
-    router.replace('/home');
+    router.back();
   };
 
   const handleCall = async (phone: string) => {
@@ -93,49 +107,61 @@ export default function SheltersListScreen() {
         onPress={() => void handleCall(item.phone)}
         accessibilityRole="button"
         accessibilityLabel={`Call ${item.name}`}>
+        <Text style={styles.callButtonEmoji}>📞</Text>
         <Text style={styles.callButtonText}>Call Now</Text>
-        <Phone size={15} color="#e2e8f0" strokeWidth={2.2} />
       </TouchableOpacity>
     </View>
   );
 
   return (
+    <LinearGradient
+      colors={PAGE_GRADIENTS[currentStatus]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.pageGradient}>
     <SafeAreaView style={styles.container}>
+      <View pointerEvents="none" style={styles.branchOverlayWrap}>
+        <Image
+          source={require('../../assets/images/traffic-light-bg.png')}
+          style={[styles.branchOverlay, { tintColor: BRANCH_TINT[currentStatus] }]}
+        />
+      </View>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={styles.headerIconButton}
           onPress={handleBackToDashboard}
           accessibilityRole="button"
           accessibilityLabel="Back to App">
-          <ArrowLeft size={18} color="#e5e7eb" strokeWidth={2.4} />
+          <Image source={require('../../assets/images/turn-back.png')} style={styles.backArrowImage} />
         </TouchableOpacity>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>Resource & Shelter Directory</Text>
           <Text style={styles.subtitle}>Discreet Search. Available Resources.</Text>
         </View>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={styles.headerIconButton}
           onPress={handleQuickExit}
           accessibilityRole="button"
           accessibilityLabel="Emergency Exit">
-          <X size={18} color="#e5e7eb" strokeWidth={2.4} />
+          <Image source={require('../../assets/images/image_10.png')} style={styles.stealthExitImage} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.headerHint}>← Back to App  |  X Emergency Exit</Text>
 
       <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search by city or region..."
-          placeholderTextColor="#64748b"
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-          textAlign="right"
-          writingDirection="rtl"
-        />
+        <View style={styles.searchInputWrap}>
+          <Ionicons name="search-outline" size={16} color="#9CA3AF" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by city or region..."
+            placeholderTextColor="#9CA3AF"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            textAlign="left"
+          />
+        </View>
       </View>
 
       <FlatList
@@ -147,19 +173,38 @@ export default function SheltersListScreen() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🔍</Text>
             <Text style={styles.emptyTitle}>No matching resources found</Text>
             <Text style={styles.emptySubtitle}>Try another city or region.</Text>
           </View>
         }
       />
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  pageGradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#030712',
+    backgroundColor: 'transparent',
+  },
+  branchOverlayWrap: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  branchOverlay: {
+    position: 'absolute',
+    bottom: -90,
+    right: -35,
+    width: 420,
+    height: 520,
+    opacity: 0.15,
+    transform: [{ rotate: '-14deg' }],
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
@@ -174,46 +219,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   title: {
-    color: '#f8fafc',
-    fontSize: 21,
+    color: '#2D3436',
+    fontSize: 20,
     fontWeight: '700',
-    textAlign: 'center',
+    textAlign: 'left',
+    letterSpacing: 0.2,
   },
   subtitle: {
-    marginTop: 2,
-    color: '#94a3b8',
+    marginTop: 3,
+    color: '#9CA3AF',
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: 'left',
+    fontWeight: '500',
   },
-  headerButton: {
+  headerIconButton: {
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#1f2937',
+    borderColor: '#E5E7EB',
   },
-  headerHint: {
-    color: '#94a3b8',
-    fontSize: 11,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+  backArrowImage: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain',
+    tintColor: '#374151',
+  },
+  stealthExitImage: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   searchWrap: {
     paddingHorizontal: 20,
     paddingBottom: 10,
+    paddingTop: 6,
+  },
+  searchInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
-    backgroundColor: 'rgba(15,23,42,0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.18)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    color: '#f1f5f9',
+    flex: 1,
+    paddingVertical: 13,
+    color: '#2D3436',
     fontSize: 14,
   },
   listContent: {
@@ -222,87 +286,94 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   card: {
-    backgroundColor: 'rgba(15,23,42,0.78)',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.14)',
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
   },
   cardHeader: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
   },
   name: {
     flex: 1,
-    color: '#f8fafc',
+    color: '#2D3436',
     fontSize: 16,
     fontWeight: '700',
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: 'left',
+    writingDirection: 'ltr',
     lineHeight: 22,
   },
   typeBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#0f172a',
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: '#E8F5E9',
   },
   typeBadgeText: {
-    color: '#cbd5e1',
+    color: '#5F7A61',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
   metaRow: {
     marginTop: 8,
   },
   metaText: {
-    color: '#94a3b8',
+    color: '#9CA3AF',
     fontSize: 13,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
   metaDivider: {
-    color: '#475569',
+    color: '#D1D5DB',
   },
   callButton: {
     marginTop: 14,
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 12,
-    paddingVertical: 11,
+    backgroundColor: '#5F7A61',
+    borderRadius: 16,
+    paddingVertical: 12,
+  },
+  callButtonEmoji: {
+    fontSize: 14,
   },
   callButtonText: {
-    color: '#e2e8f0',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
-    textAlign: 'right',
+    textAlign: 'left',
   },
   emptyState: {
     paddingVertical: 48,
     alignItems: 'center',
   },
+  emptyEmoji: {
+    fontSize: 32,
+    marginBottom: 12,
+  },
   emptyTitle: {
-    color: '#e2e8f0',
-    fontSize: 15,
+    color: '#2D3436',
+    fontSize: 16,
     fontWeight: '700',
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
   emptySubtitle: {
     marginTop: 6,
-    color: '#64748b',
+    color: '#9CA3AF',
     fontSize: 13,
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
 });

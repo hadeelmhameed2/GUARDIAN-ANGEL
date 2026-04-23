@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  Animated,
   Alert,
-  Easing,
+  Image,
   Linking,
   Modal,
   SafeAreaView,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getCurrentStatus,
@@ -26,113 +26,90 @@ import {
 } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
 
-const AFFIRMATIONS = [
-  'You are not alone',
-  'Your strength is within you',
-  'We are here with you',
-  'One step at a time',
-  'Trust your intuition',
+const HEADER_GRADIENTS = {
+  red: ['#fdecec', '#f9dede', '#f7e8e6'],
+  yellow: ['#fff4dd', '#fdeac8', '#fef8e8'],
+  green: ['#e8f5e9', '#dff0e1', '#eef8ef'],
+} as const;
+
+const PAGE_GRADIENTS = {
+  red: ['#FFD6D6', '#FAF3E0'],
+  yellow: ['#FFE8D1', '#FAF3E0'],
+  green: ['#E8F5E9', '#FAF3E0'],
+} as const;
+const BRANCH_TINT: Record<RiskState, string> = {
+  red: '#9f4b4b',
+  yellow: '#a8692e',
+  green: '#4d6d52',
+};
+
+const STATUS_SCENARIOS = {
+  red: {
+    pillBg: '#FDECEC',
+    pillText: 'HIGH RISK',
+    title: 'Your relationship may be unsafe.',
+    description: 'Your answers indicate severe risk indicators. Seek immediate help.',
+  },
+  yellow: {
+    pillBg: '#FEF9E7',
+    pillText: 'MEDIUM RISK',
+    title: 'Concerns detected.',
+    description: 'Some warning signs require review. See resources.',
+  },
+  green: {
+    pillBg: '#E8F5E9',
+    pillText: 'LOW RISK',
+    title: 'Your safety baseline looks stable.',
+    description: 'Continue checking in and keep support resources nearby.',
+  },
+} as const;
+
+const HEART_AFFIRMATIONS = {
+  red: "Your safety is our top priority. Please reach out to a professional or a trusted person immediately. You are not alone.",
+  yellow: 'Trust your intuition. You are not overreacting. It is okay to seek support and explore your options.',
+  green: "It's a good day to check in with yourself. Prioritizing your well-being is a sign of strength.",
+} as const;
+
+const SAFETY_TIPS = [
+  'Trust your intuition: If something feels off, it usually is.',
+  'Digital Privacy: Use incognito mode for sensitive searches.',
+  "Emergency Code: Set a 'safe word' with your trusted contact.",
+  "Location Safety: Keep your GPS off when it's not strictly necessary.",
 ];
 
-const GREEN_EMPOWERMENT_QUOTES = [
-  'Inner Peace is your Greatest Power',
-  'Strength Grows in Quiet Moments',
-  'You are Building Your Future, Step by Step',
-];
+const ASSESSMENT_HERO_BG = {
+  red: '#FFD6D6',
+  yellow: '#FFE8D1',
+  green: '#E8F5E9',
+} as const;
 
-const GREEN_SUPPORT_TEXT =
-  'This is your time to build your protective foundation quietly. Use these calm moments to focus on your personal and financial security. We are here to protect your safe space.';
+const ACTION_GRID_BG = {
+  red: '#fdeeee',
+  yellow: '#fdf3e4',
+  green: '#edf6ee',
+} as const;
 
 export default function HomeScreen() {
   const router = useRouter();
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const [currentStatus, setStatus] = useState<RiskState>(getCurrentStatus());
-  const [affirmation, setAffirmation] = useState(AFFIRMATIONS[0]);
-  const [greenEmpowermentQuote, setGreenEmpowermentQuote] = useState(GREEN_EMPOWERMENT_QUOTES[0]);
   const [trustedContactName, setTrustedContactName] = useState('');
   const [trustedContactPhone, setTrustedContactPhone] = useState('');
   const [trustedContacts, setTrustedContactsState] = useState<TrustedContact[]>([]);
-  const [showContactForm, setShowContactForm] = useState(true);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-  const [emojiRowVersion, setEmojiRowVersion] = useState(0);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showSafetyTipsModal, setShowSafetyTipsModal] = useState(false);
   const isUnlocked = hasSecureSessionAccess();
-  const statusOrder = useMemo(() => ({ red: 0, yellow: 1, green: 2 }), []);
-  const trafficAnim = useRef(new Animated.Value(statusOrder[currentStatus])).current;
-  const contactFormAnim = useRef(new Animated.Value(0)).current;
-  const assessmentPressAnim = useRef(new Animated.Value(1)).current;
 
   useFocusEffect(
     useCallback(() => {
       const nextStatus = getCurrentStatus();
       setStatus(nextStatus);
-      setAffirmation(AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]);
-      setGreenEmpowermentQuote(
-        GREEN_EMPOWERMENT_QUOTES[Math.floor(Math.random() * GREEN_EMPOWERMENT_QUOTES.length)],
-      );
       const contacts = getTrustedContacts();
       setTrustedContactsState(contacts);
-      setShowContactForm(contacts.length === 0);
-      setEmojiRowVersion((prev) => prev + 1);
       setShowEmergencyModal(nextStatus === 'red');
     }, []),
   );
-
-  useEffect(() => {
-    Animated.timing(trafficAnim, {
-      toValue: statusOrder[currentStatus],
-      duration: 480,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [currentStatus, statusOrder, trafficAnim]);
-
-  useEffect(() => {
-    Animated.timing(contactFormAnim, {
-      toValue: showContactForm ? 1 : 0,
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [contactFormAnim, showContactForm]);
-
-  const statusMeta = useMemo(() => {
-    if (currentStatus === 'green') {
-      return {
-        label: 'Green',
-        color: '#22c55e',
-        message: 'Low Risk',
-        actionLabel: 'Focus on Your Future Fund',
-      };
-    }
-    if (currentStatus === 'yellow') {
-      return {
-        label: 'Yellow',
-        color: '#eab308',
-        message:
-          'Caution: Some patterns need attention. Consider documenting your experiences and reviewing your safety plan.',
-        actionLabel: 'Safety Tips',
-      };
-    }
-    return {
-      label: 'Red',
-      color: '#ef4444',
-      message: 'High-risk indicators detected.',
-      actionLabel: null,
-    };
-  }, [currentStatus]);
-
-  const handleStatusAction = () => {
-    if (currentStatus === 'green') {
-      router.push('/exit_fund');
-      return;
-    }
-    if (currentStatus === 'yellow') {
-      Alert.alert(
-        'Safety Tips',
-        '1. Keep your phone charged.\n2. Trust your gut.\n3. Keep your PIN secret.',
-      );
-    }
-  };
 
   const saveTrustedContact = async () => {
     if (!isUnlocked) return;
@@ -149,8 +126,6 @@ export default function HomeScreen() {
     setTrustedContactsState(nextContacts);
     setTrustedContactName('');
     setTrustedContactPhone('');
-    setShowContactForm(false);
-    setEmojiRowVersion((prev) => prev + 1);
   };
 
   const openDialer = async (phone: string, fallbackAlert: string) => {
@@ -173,63 +148,41 @@ export default function HomeScreen() {
     const next = trustedContacts.filter((_, idx) => idx !== index);
     await setTrustedContacts(next);
     setTrustedContactsState(next);
-    setEmojiRowVersion((prev) => prev + 1);
   };
 
-  const handleAssessmentPress = () => {
-    Animated.sequence([
-      Animated.timing(assessmentPressAnim, {
-        toValue: 0.96,
-        duration: 90,
-        useNativeDriver: true,
-      }),
-      Animated.timing(assessmentPressAnim, {
-        toValue: 1,
-        duration: 90,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      router.push('/assessment');
-    });
-  };
+  const headerScenario = STATUS_SCENARIOS[currentStatus];
+  const headerGradient = HEADER_GRADIENTS[currentStatus];
+  const pageGradient = PAGE_GRADIENTS[currentStatus];
+  const heartAffirmation = HEART_AFFIRMATIONS[currentStatus];
 
-  const buildTrafficLightStyle = (index: number, color: string) => {
-    const intensity = trafficAnim.interpolate({
-      inputRange: [index - 0.65, index, index + 0.65],
-      outputRange: [0, 1, 0],
-      extrapolate: 'clamp',
-    });
+  const buildTrafficLightStyle = (light: RiskState) => {
+    const isActive = light === currentStatus;
+    const colors: Record<RiskState, string> = {
+      red: '#ef4444',
+      yellow: '#f59e0b',
+      green: '#22c55e',
+    };
+    const color = colors[light];
     return {
-      backgroundColor: intensity.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['rgba(148,163,184,0.1)', color],
-      }),
-      borderColor: intensity.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['rgba(148,163,184,0.35)', color],
-      }),
+      backgroundColor: isActive ? color : 'rgba(148,163,184,0.22)',
+      borderColor: isActive ? color : 'rgba(148,163,184,0.42)',
       shadowColor: color,
-      shadowOpacity: intensity.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 0.85],
-      }),
-      shadowRadius: intensity.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 20],
-      }),
-      transform: [
-        {
-          scale: intensity.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.92, 1.03],
-          }),
-        },
-      ],
+      shadowOpacity: isActive ? 0.72 : 0,
+      shadowRadius: isActive ? 14 : 0,
+      transform: [{ scale: isActive ? 1.04 : 0.96 }],
+      opacity: isActive ? 1 : 0.72,
     };
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient colors={pageGradient} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
+      <SafeAreaView style={styles.container}>
+      <View pointerEvents="none" style={styles.branchOverlayWrap}>
+        <Image
+          source={require('../assets/images/traffic-light-bg.png')}
+          style={[styles.branchOverlay, { tintColor: BRANCH_TINT[currentStatus] }]}
+        />
+      </View>
       <Modal visible={showEmergencyModal} transparent animationType="fade">
         <View style={styles.emergencyOverlay}>
           <View style={styles.emergencyContent}>
@@ -241,166 +194,202 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+      <Modal visible={showSupportModal} transparent animationType="fade" onRequestClose={() => setShowSupportModal(false)}>
+        <View style={styles.supportOverlay}>
+          <View style={styles.supportModal}>
+            <Text style={styles.supportModalTitle}>Talk to someone</Text>
+            <TouchableOpacity style={styles.supportActionButton} onPress={() => void openDialer('100', 'Unable to prepare the police call.')}>
+              <Text style={styles.supportActionText}>🚨 Police (100)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.supportActionButton}
+              onPress={() => void openDialer('118', 'Unable to prepare the emergency hotline call.')}>
+              <Text style={styles.supportActionText}>🛡️ National Hotline (118)</Text>
+            </TouchableOpacity>
+            {trustedContacts.map((contact, index) => (
+              <TouchableOpacity
+                key={`support-contact-${index}`}
+                style={styles.supportActionButton}
+                onPress={() => void openDialer(contact.phone, 'Please add a valid contact first.')}>
+                <Text style={styles.supportActionText}>👤 {contact.name || `Custom Contact ${index + 1}`}</Text>
+              </TouchableOpacity>
+            ))}
+            {trustedContacts.length === 0 ? (
+              <Text style={styles.supportEmptyText}>Add trusted contacts below to enable one-tap calling.</Text>
+            ) : null}
+            <View style={styles.contactInputWrap}>
+              <TextInput
+                style={styles.contactInput}
+                value={trustedContactName}
+                onChangeText={setTrustedContactName}
+                placeholder="Trusted Contact Name (optional)"
+                placeholderTextColor="#9ca3af"
+              />
+              <TextInput
+                style={styles.contactInput}
+                value={trustedContactPhone}
+                onChangeText={setTrustedContactPhone}
+                placeholder="Trusted Contact Phone"
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+              />
+              <TouchableOpacity style={styles.contactSaveButton} onPress={() => void saveTrustedContact()}>
+                <Text style={styles.contactSaveButtonText}>
+                  {trustedContacts.length > 0 ? 'Add / Update Contact' : 'Save Contact'}
+                </Text>
+              </TouchableOpacity>
+              {trustedContacts.length > 0 ? (
+                <View style={styles.manageRow}>
+                  {trustedContacts.map((contact, index) => (
+                    <TouchableOpacity
+                      key={`modal-call-${index}`}
+                      style={styles.removePill}
+                      onPress={() => void openDialer(contact.phone, 'Please add contact first.')}>
+                      <Text style={styles.removePillText}>Call {contact.name || `Contact ${index + 1}`}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {trustedContacts.map((_, index) => (
+                    <TouchableOpacity
+                      key={`modal-remove-${index}`}
+                      style={styles.removePill}
+                      onPress={() => void removeTrustedContact(index)}>
+                      <Text style={styles.removePillText}>Remove {index + 1}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+            <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSupportModal(false)}>
+              <Text style={styles.supportCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showSafetyTipsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSafetyTipsModal(false)}>
+        <View style={styles.supportOverlay}>
+          <View style={styles.safetyTipsModal}>
+            <View style={styles.safetyTipsHeader}>
+              <Text style={styles.safetyTipsTitle}>Safety Tips</Text>
+              <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+                <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+              </TouchableOpacity>
+            </View>
+            {SAFETY_TIPS.map((tip) => (
+              <View key={tip} style={styles.safetyTipRow}>
+                <Text style={styles.safetyTipIcon}>🛡️</Text>
+                <Text style={styles.safetyTipText}>{tip}</Text>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSafetyTipsModal(false)}>
+              <Text style={styles.supportCloseText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.headerIconText}>←</Text>
+          </TouchableOpacity>
           <Text style={styles.title}>Safe Zone</Text>
           <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.quickExitEmoji}>🧮</Text>
+            <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.trafficShell}>
-          <View style={styles.trafficHousing}>
-            <Animated.View style={[styles.trafficLight, buildTrafficLightStyle(0, '#ef4444')]} />
-            <Animated.View style={[styles.trafficLight, buildTrafficLightStyle(1, '#facc15')]} />
-            <Animated.View style={[styles.trafficLight, buildTrafficLightStyle(2, '#22c55e')]} />
-          </View>
-          <Text style={styles.statusMessage}>{statusMeta.label} - {statusMeta.message}</Text>
-        </View>
-
-        <View style={styles.affirmationCard}>
-          <Text style={styles.affirmationLabel}>Today&apos;s Affirmation</Text>
-          <Text style={styles.affirmationText}>{currentStatus === 'green' ? greenEmpowermentQuote : affirmation}</Text>
-          {currentStatus === 'green' ? (
-            <View style={styles.greenEmpowermentCard}>
-              <View style={styles.greenIconWrap}>
-                <Text style={styles.greenIcon}>✓</Text>
+        <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trafficShell}>
+          <View style={styles.headerMainRow}>
+            <View style={styles.trafficHousingSoft}>
+              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('red')]} />
+              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('yellow')]} />
+              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('green')]} />
+            </View>
+            <View style={styles.statusTextWrap}>
+              <View style={[styles.statusPill, { backgroundColor: headerScenario.pillBg }]}>
+                <Text style={styles.statusPillText}>{headerScenario.pillText}</Text>
               </View>
-              <Text style={styles.greenAffirmation}>{greenEmpowermentQuote}</Text>
-              <Text style={styles.greenSupportText}>{GREEN_SUPPORT_TEXT}</Text>
-              <TouchableOpacity style={styles.greenActionButton} onPress={handleStatusAction}>
-                <Text style={styles.greenActionButtonText}>Focus on Your Future Fund</Text>
-              </TouchableOpacity>
+              <Text style={styles.statusMessage}>{headerScenario.title}</Text>
+              <Text style={styles.statusSubMessage}>{headerScenario.description}</Text>
             </View>
-          ) : statusMeta.actionLabel ? (
-            <TouchableOpacity style={styles.cardActionButton} onPress={handleStatusAction}>
-              <Text style={styles.cardActionButtonText}>{statusMeta.actionLabel}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {isUnlocked && showContactForm ? (
-          <Animated.View
-            style={[
-              styles.card,
-              styles.safetyCard,
-              currentStatus === 'red' ? styles.safetyCardEmergency : null,
-              {
-                opacity: contactFormAnim,
-                transform: [
-                  {
-                    translateY: contactFormAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [12, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}>
-            <View style={styles.contactInputWrap}>
-                <TextInput
-                  style={styles.contactInput}
-                  value={trustedContactName}
-                  onChangeText={setTrustedContactName}
-                  placeholder="Support Contact Name (optional)"
-                  placeholderTextColor="#9ca3af"
-                />
-                <TextInput
-                  style={styles.contactInput}
-                  value={trustedContactPhone}
-                  onChangeText={setTrustedContactPhone}
-                  placeholder="Support Contact Phone"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="phone-pad"
-                />
-                <TouchableOpacity
-                  style={[styles.contactSaveButton, currentStatus === 'red' ? styles.contactSaveButtonEmergency : null]}
-                  onPress={() => void saveTrustedContact()}>
-                  <Text style={styles.contactSaveButtonText}>
-                    {trustedContacts.length > 0 ? 'Add Another' : 'Save'}
-                  </Text>
-                </TouchableOpacity>
-                {trustedContacts.length > 0 ? (
-                  <View style={styles.manageRow}>
-                    {trustedContacts.map((_, index) => (
-                      <TouchableOpacity
-                        key={`remove-${index}`}
-                        style={styles.removePill}
-                        onPress={() => void removeTrustedContact(index)}>
-                        <Text style={styles.removePillText}>Remove {index + 1}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
-            </View>
-          </Animated.View>
-        ) : null}
+          </View>
+          <View style={styles.headerAffirmationBox}>
+            <Text style={styles.headerAffirmationIcon}>🤍</Text>
+            <Text style={styles.headerAffirmationText}>{heartAffirmation}</Text>
+          </View>
+        </LinearGradient>
 
         <View style={styles.bottomActions}>
-          {isUnlocked ? (
-            <View style={styles.emergencyActionsBottom}>
-              <TouchableOpacity
-                style={[styles.hotlineButton, styles.primaryEmergencyButton]}
-                accessibilityRole="button"
-                accessibilityLabel="Call Police 100"
-                onPress={() => void openDialer('100', 'Unable to prepare the police call.')}>
-                <Text style={styles.hotlineEmoji}>🚨</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.hotlineButton, styles.hotline118Button]}
-                accessibilityRole="button"
-                accessibilityLabel="Call Emergency Hotline 118"
-                onPress={() => void openDialer('118', 'Unable to prepare the emergency hotline call.')}>
-                <Text style={styles.hotlineEmoji}>🛡️</Text>
-              </TouchableOpacity>
-              <View key={`emoji-row-${emojiRowVersion}`} style={styles.supportEmojiRow}>
-                {trustedContacts[0]?.phone ? (
-                  <TouchableOpacity
-                    style={[styles.emergencyActionButton, styles.secondaryEmergencyButton]}
-                    onPress={() => void openDialer(trustedContacts[0].phone, 'Please add contact one first.')}>
-                    <Text style={styles.emojiActionText}>👼</Text>
-                  </TouchableOpacity>
-                ) : null}
-                {trustedContacts[1]?.phone ? (
-                  <TouchableOpacity
-                    style={[styles.emergencyActionButton, styles.secondaryEmergencyButton]}
-                    onPress={() => void openDialer(trustedContacts[1].phone, 'Please add contact two first.')}>
-                    <Text style={styles.emojiActionText}>🧚‍♀️</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              {isUnlocked ? (
-                <TouchableOpacity style={styles.plusTriggerButton} onPress={() => setShowContactForm((prev) => !prev)}>
-                  <Text style={styles.plusTriggerText}>+</Text>
-                </TouchableOpacity>
-              ) : null}
+          <Text style={styles.actionSubheader}>What you can do</Text>
+          <TouchableOpacity
+            style={[styles.securityTipsButton, { backgroundColor: ACTION_GRID_BG[currentStatus] }]}
+            onPress={() => setShowSafetyTipsModal(true)}>
+            <Text style={styles.securityTipsTitle}>Security Tips</Text>
+            <Text style={styles.securityTipsDescription}>Quick practical actions to protect yourself right now.</Text>
+            <Text style={styles.securityTipsArrow}>&gt;</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.assessmentHeroCard, { backgroundColor: ASSESSMENT_HERO_BG[currentStatus] }]} onPress={() => router.push('/assessment')}>
+            <Text style={styles.assessmentHeroTitle}>Start Status Assessment</Text>
+            <Text style={styles.assessmentHeroDescription}>
+              Identify your risk level and get personalized safety guidance based on your current situation.
+            </Text>
+            <View style={styles.assessmentHeroActionRow}>
+              <Text style={styles.assessmentHeroActionText}>Start Quiz</Text>
+              <Text style={styles.assessmentHeroArrow}>&gt;</Text>
             </View>
-          ) : null}
-
-          <Animated.View style={{ transform: [{ scale: assessmentPressAnim }] }}>
-            <TouchableOpacity style={styles.mainButton} onPress={handleAssessmentPress}>
-              <Text style={styles.mainButtonText}>Status Assessment</Text>
+          </TouchableOpacity>
+          <View style={styles.actionGridRow}>
+            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowSupportModal(true)}>
+              <Image source={require('../assets/images/image_12.png')} style={styles.actionGridIconImage} />
+              <Text style={styles.actionGridTitle}>Talk to someone</Text>
+              <Text style={styles.actionGridDescription}>Reach out to a trusted person or support line.</Text>
+              <Text style={styles.actionGridArrow}>&gt;</Text>
             </TouchableOpacity>
-          </Animated.View>
-
-          <TouchableOpacity style={styles.mainButton} onPress={() => router.push('/exit_fund')}>
-            <Text style={styles.mainButtonText}>Exit Fund</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.mainButton} onPress={() => router.push('/shelters')}>
-            <Text style={styles.mainButtonText}>Shelter Directory</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/shelters')}>
+              <Image source={require('../assets/images/image_11.png')} style={styles.actionGridIconImage} />
+              <Text style={styles.actionGridTitle}>Shelters</Text>
+              <Text style={styles.actionGridDescription}>Prepare steps for when you need to leave.</Text>
+              <Text style={styles.actionGridArrow}>&gt;</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/exit_fund')}>
+              <Image source={require('../assets/images/image_13.png')} style={styles.actionGridIconImage} />
+              <Text style={styles.actionGridTitle}>Secure resources</Text>
+              <Text style={styles.actionGridDescription}>Safely save money or important documents.</Text>
+              <Text style={styles.actionGridArrow}>&gt;</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  pageGradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#030712',
+    backgroundColor: 'transparent',
+  },
+  branchOverlayWrap: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  branchOverlay: {
+    position: 'absolute',
+    bottom: -90,
+    right: -35,
+    width: 420,
+    height: 520,
+    opacity: 0.15,
+    transform: [{ rotate: '-14deg' }],
+    zIndex: 0,
   },
   scrollContent: {
     padding: 20,
@@ -408,60 +397,125 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   title: {
-    fontSize: 28,
+    flex: 1,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#f8fafc',
+    color: '#1c2b3a',
+    textAlign: 'left',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 16,
+    gap: 10,
   },
-  quickExitButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 1,
-    borderColor: '#2f2f2f',
+    borderColor: '#dce5ee',
+  },
+  headerIconText: {
+    color: '#4a5d72',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  quickExitButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: '#dce5ee',
+    paddingHorizontal: 12,
   },
   quickExitEmoji: {
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D3436',
+  },
+  stealthExitImage: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   trafficShell: {
-    alignItems: 'center',
-    marginBottom: 14,
-    position: 'relative',
+    marginBottom: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    padding: 25,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.18)',
   },
-  trafficHousing: {
-    width: 102,
-    borderRadius: 28,
-    paddingVertical: 12,
+  headerMainRow: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'flex-start',
+    writingDirection: 'ltr',
+  },
+  trafficHousingSoft: {
+    width: 74,
+    borderRadius: 24,
+    paddingVertical: 14,
     gap: 10,
     alignItems: 'center',
-    backgroundColor: 'rgba(15,23,42,0.75)',
+    backgroundColor: 'rgba(32,41,52,0.9)',
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.2)',
+    borderColor: 'rgba(255,255,255,0.22)',
+    shadowColor: '#111827',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
-  trafficLight: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    borderWidth: 1.4,
+  trafficLightSoft: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 2,
+  },
+  statusTextWrap: {
+    flex: 1,
+    alignItems: 'flex-start',
+    writingDirection: 'ltr',
+  },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  statusPillText: {
+    color: '#2D3436',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   affirmationCard: {
-    backgroundColor: 'rgba(15,23,42,0.88)',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(56,189,248,0.12)',
+    borderColor: 'rgba(148,163,184,0.2)',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   affirmationLabel: {
-    color: '#9ca3af',
+    color: '#6b7f95',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -469,40 +523,81 @@ const styles = StyleSheet.create({
   },
   affirmationText: {
     marginTop: 8,
-    color: '#f8fafc',
+    color: '#1c2b3a',
     fontSize: 21,
     fontWeight: '700',
     lineHeight: 28,
   },
   card: {
-    backgroundColor: 'rgba(15,23,42,0.7)',
-    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     padding: 20,
-    marginBottom: 14,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.18)',
+    borderColor: 'rgba(148,163,184,0.2)',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#d1d5db',
+    color: '#334155',
     marginBottom: 10,
   },
   statusMessage: {
     marginTop: 10,
+    fontSize: 25,
+    color: '#2D3436',
+    textAlign: 'left',
+    lineHeight: 32,
+    fontWeight: '700',
+    writingDirection: 'ltr',
+  },
+  statusSubMessage: {
+    marginTop: 10,
+    color: '#2D3436',
     fontSize: 14,
-    color: '#cbd5e1',
-    textAlign: 'center',
+    textAlign: 'left',
+    lineHeight: 21,
+    writingDirection: 'ltr',
+  },
+  headerAffirmationBox: {
+    marginTop: 16,
+    borderRadius: 20,
+    backgroundColor: '#FFF5F5',
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    writingDirection: 'ltr',
+  },
+  headerAffirmationIcon: {
+    fontSize: 18,
+    lineHeight: 23,
+  },
+  headerAffirmationText: {
+    flex: 1,
+    color: '#2D3436',
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
   greenEmpowermentCard: {
     marginTop: 14,
     borderRadius: 16,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: '#06120c',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#14532d',
+    borderColor: '#e2e8f0',
     alignItems: 'center',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
   },
   greenIconWrap: {
     width: 36,
@@ -519,36 +614,38 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   greenAffirmation: {
-    color: '#a7f3d0',
+    color: '#334155',
     fontSize: 20,
     lineHeight: 34,
     fontWeight: '300',
-    textAlign: 'center',
+    textAlign: 'left',
     letterSpacing: 1.1,
     textTransform: 'lowercase',
   },
   greenSupportText: {
     marginTop: 12,
-    color: '#6ee7b7',
+    color: '#475569',
     fontSize: 13,
     lineHeight: 26,
-    textAlign: 'center',
+    textAlign: 'left',
     letterSpacing: 0.6,
   },
   greenActionButton: {
     marginTop: 14,
-    backgroundColor: '#dcfce7',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#dbe4ec',
   },
   greenActionButtonText: {
-    color: '#14532d',
+    color: '#42566b',
     fontSize: 13,
     fontWeight: '700',
   },
   safetyCard: {
-    backgroundColor: '#0b1220',
+    backgroundColor: '#ffffff',
   },
   safetyCardEmergency: {
     backgroundColor: '#7f1d1d',
@@ -561,9 +658,9 @@ const styles = StyleSheet.create({
   },
   contactInput: {
     borderWidth: 1,
-    borderColor: '#374151',
-    backgroundColor: '#111827',
-    color: '#fff',
+    borderColor: '#d3dee8',
+    backgroundColor: '#f8fbff',
+    color: '#1f2937',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -572,8 +669,8 @@ const styles = StyleSheet.create({
   contactSaveButton: {
     marginTop: 4,
     alignSelf: 'flex-start',
-    backgroundColor: '#1f2937',
-    borderRadius: 10,
+    backgroundColor: '#ecf1f7',
+    borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -583,7 +680,7 @@ const styles = StyleSheet.create({
     borderColor: '#fecaca',
   },
   contactSaveButtonText: {
-    color: '#fff',
+    color: '#42566b',
     fontWeight: '700',
     fontSize: 12,
   },
@@ -594,15 +691,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   removePill: {
-    backgroundColor: '#111827',
+    backgroundColor: '#eef3f8',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#d3dee8',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   removePillText: {
-    color: '#cbd5e1',
+    color: '#475569',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -633,9 +730,9 @@ const styles = StyleSheet.create({
     borderColor: '#14b8a6',
   },
   secondaryEmergencyButton: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#eef2f7',
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#d3dee8',
   },
   disabledEmojiButton: {
     opacity: 0.35,
@@ -653,7 +750,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   supportEmojiRow: {
@@ -679,32 +776,277 @@ const styles = StyleSheet.create({
   bottomActions: {
     marginTop: 'auto',
   },
+  actionSubheader: {
+    marginTop: 6,
+    marginBottom: 14,
+    color: '#2D3436',
+    fontSize: 21,
+    fontFamily: 'serif',
+    textAlign: 'left',
+  },
+  securityTipsButton: {
+    width: '100%',
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  securityTipsTitle: {
+    color: '#2D3436',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  securityTipsDescription: {
+    marginTop: 6,
+    color: '#6b7280',
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  securityTipsArrow: {
+    marginTop: 8,
+    color: '#64748b',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'left',
+  },
+  assessmentHeroCard: {
+    width: '100%',
+    borderRadius: 25,
+    padding: 25,
+    marginBottom: 16,
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#cde5d1',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  assessmentHeroTitle: {
+    marginTop: 0,
+    color: '#2D3436',
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  assessmentHeroDescription: {
+    marginTop: 10,
+    color: '#3f4c4f',
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  assessmentHeroActionRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    gap: 8,
+  },
+  assessmentHeroActionText: {
+    color: '#2D3436',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  assessmentHeroArrow: {
+    color: '#2D3436',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  actionGridRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionGridCard: {
+    flex: 1,
+    minHeight: 176,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  actionGridIconImage: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
+  actionGridTitle: {
+    color: '#2D3436',
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  actionGridDescription: {
+    marginTop: 8,
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+    flex: 1,
+  },
+  actionGridArrow: {
+    color: '#64748b',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'left',
+  },
+  supportOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17,24,39,0.35)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  supportModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  supportModalTitle: {
+    color: '#2D3436',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  supportActionButton: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  supportActionText: {
+    color: '#2D3436',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  supportEmptyText: {
+    marginVertical: 4,
+    color: '#6b7280',
+    fontSize: 12,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
+  supportCloseButton: {
+    marginTop: 6,
+    borderRadius: 14,
+    paddingVertical: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  supportCloseText: {
+    textAlign: 'center',
+    color: '#374151',
+    fontWeight: '700',
+  },
+  safetyTipsModal: {
+    backgroundColor: '#F8F4EA',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#dbe7d9',
+  },
+  safetyTipsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  safetyTipsTitle: {
+    color: '#2D3436',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'left',
+  },
+  safetyTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 10,
+  },
+  safetyTipIcon: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  safetyTipText: {
+    flex: 1,
+    color: '#2D3436',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
   cardActionButton: {
     marginTop: 14,
-    alignSelf: 'center',
-    backgroundColor: '#111827',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    alignSelf: 'stretch',
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#dbe4ec',
   },
   cardActionButtonText: {
-    color: '#fff',
-    fontSize: 13,
+    color: '#42566b',
+    fontSize: 14,
     fontWeight: '700',
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
   mainButton: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
-    paddingVertical: 16,
-    marginBottom: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    paddingVertical: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#dbe4ec',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  mainButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 10,
+  },
+  mainButtonIcon: {
+    fontSize: 18,
   },
   mainButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 17,
+    color: '#42566b',
+    textAlign: 'left',
+    fontSize: 16,
     fontWeight: '700',
+    flex: 1,
+    writingDirection: 'ltr',
   },
   emergencyOverlay: {
     flex: 1,
