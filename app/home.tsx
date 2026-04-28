@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -93,6 +93,15 @@ const ACTION_GRID_BG = {
   green: '#edf6ee',
 } as const;
 
+type EvidenceJournalEntry = {
+  id: string;
+  description: string;
+  timestamp: string;
+  imageBase64?: string;
+};
+
+const EVIDENCE_JOURNAL_STORAGE_KEY = 'guardian_angel_evidence_journal_v1';
+
 export default function HomeScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -106,9 +115,16 @@ export default function HomeScreen() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showSafetyTipsModal, setShowSafetyTipsModal] = useState(false);
   const [showPanicSettingsModal, setShowPanicSettingsModal] = useState(false);
+  const [showJournalModal, setShowJournalModal] = useState(false);
   const [isTriggeringEmergency, setIsTriggeringEmergency] = useState(false);
   const [panicPhoneNumber, setPanicPhoneNumber] = useState('');
   const [panicMessage, setPanicMessage] = useState('');
+  const [incidentDescription, setIncidentDescription] = useState('');
+  const [selectedJournalImage, setSelectedJournalImage] = useState<string | null>(null);
+  const [selectedJournalImageName, setSelectedJournalImageName] = useState('');
+  const [journalEntries, setJournalEntries] = useState<EvidenceJournalEntry[]>([]);
+  const [journalViewerImage, setJournalViewerImage] = useState<string | null>(null);
+  const fileInputRef = useRef<any>(null);
   const isUnlocked = hasSecureSessionAccess();
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -130,8 +146,162 @@ export default function HomeScreen() {
         setPanicPhoneNumber(settings.phoneNumber);
         setPanicMessage(settings.emergencyMessage);
       })();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const raw = window.localStorage.getItem(EVIDENCE_JOURNAL_STORAGE_KEY);
+        if (!raw) {
+          setJournalEntries([]);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(raw) as EvidenceJournalEntry[];
+          setJournalEntries(Array.isArray(parsed) ? parsed : []);
+        } catch {
+          setJournalEntries([]);
+        }
+      }
     }, []),
   );
+
+  const formatTimestamp = (date: Date) => {
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+
+  const persistJournalEntries = (entries: EvidenceJournalEntry[]) => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+      return true;
+    } catch (error: any) {
+      const isQuotaError =
+        error?.name === 'QuotaExceededError' ||
+        error?.code === 22 ||
+        error?.code === 1014 ||
+        error?.name === 'NS_ERROR_DOM_QUOTA_REACHED';
+      if (isQuotaError) {
+        Alert.alert(
+          'Storage is full',
+          'Storage is full. Please delete old entries to add more, or upgrade to cloud storage.',
+        );
+      } else {
+        Alert.alert('Save failed', 'Unable to save this entry right now.');
+      }
+      return false;
+    }
+  };
+
+  const openImagePicker = () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Unavailable', 'Image upload is currently available on web.');
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const compressImageToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const imageUrl = URL.createObjectURL(file);
+      const image = new window.Image();
+
+      image.onload = () => {
+        const maxDimension = 800;
+        const width = image.width;
+        const height = image.height;
+        const scale = Math.min(1, maxDimension / Math.max(width, height));
+        const targetWidth = Math.max(1, Math.round(width * scale));
+        const targetHeight = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(imageUrl);
+          reject(new Error('Canvas context unavailable'));
+          return;
+        }
+        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+        const compressed = canvas.toDataURL('image/jpeg', 0.6);
+        URL.revokeObjectURL(imageUrl);
+        resolve(compressed);
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        reject(new Error('Image load failed'));
+      };
+
+      image.src = imageUrl;
+    });
+
+  const handleWebFileChange = async (event: any) => {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    try {
+      const compressedImage = await compressImageToDataUrl(file);
+      setSelectedJournalImage(compressedImage);
+      setSelectedJournalImageName(file.name || 'image');
+    } catch {
+      Alert.alert('Upload failed', 'Unable to read the selected image.');
+    }
+  };
+
+  const saveJournalEntry = () => {
+    const description = incidentDescription.trim();
+    if (!description && !selectedJournalImage) {
+      Alert.alert('Missing content', 'Add a description or image before saving.');
+      return;
+    }
+
+    const nextEntry: EvidenceJournalEntry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      description,
+      timestamp: formatTimestamp(new Date()),
+      imageBase64: selectedJournalImage ?? undefined,
+    };
+
+    const nextEntries = [nextEntry, ...journalEntries];
+    const persisted = persistJournalEntries(nextEntries);
+    if (!persisted) return;
+    setJournalEntries(nextEntries);
+    setIncidentDescription('');
+    setSelectedJournalImage(null);
+    setSelectedJournalImageName('');
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const deleteJournalEntry = (id: string) => {
+    const nextEntries = journalEntries.filter((entry) => entry.id !== id);
+    const persisted = persistJournalEntries(nextEntries);
+    if (!persisted) return;
+    setJournalEntries(nextEntries);
+  };
+
+  const clearAllJournalEntries = () => {
+    Alert.alert('Clear all entries?', 'This will permanently delete all local journal entries.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          const persisted = persistJournalEntries([]);
+          if (!persisted) return;
+          setJournalEntries([]);
+          setIncidentDescription('');
+          setSelectedJournalImage(null);
+          setSelectedJournalImageName('');
+          if (Platform.OS === 'web' && fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        },
+      },
+    ]);
+  };
 
   const saveTrustedContact = async () => {
     if (!isUnlocked) return;
@@ -407,95 +577,183 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-
+      <Modal
+        visible={Boolean(journalViewerImage)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setJournalViewerImage(null)}>
+        <View style={styles.supportOverlay}>
+          <View style={styles.journalImageViewerModal}>
+            {journalViewerImage ? <Image source={{ uri: journalViewerImage }} style={styles.journalViewerImage} /> : null}
+            <TouchableOpacity style={styles.supportCloseButton} onPress={() => setJournalViewerImage(null)}>
+              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Text style={styles.headerIconText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>{t('homeScreen.safeZone')}</Text>
-          <View style={styles.headerRightActions}>
-            <LanguageSwitcher />
-            <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
-              <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trafficShell}>
-          <View style={styles.headerMainRow}>
-            <View style={styles.trafficHousingSoft}>
-              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('red')]} />
-              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('yellow')]} />
-              <View style={[styles.trafficLightSoft, buildTrafficLightStyle('green')]} />
-            </View>
-            <View style={styles.statusTextWrap}>
-              <View style={[styles.statusPill, { backgroundColor: headerScenario.pillBg }]}>
-                <Text style={styles.statusPillText}>{t(headerScenario.pillTextKey)}</Text>
-              </View>
-              <Text style={styles.statusMessage}>{t(headerScenario.titleKey)}</Text>
-              <Text style={styles.statusSubMessage}>{t(headerScenario.descriptionKey)}</Text>
-            </View>
-          </View>
-          <View style={styles.headerAffirmationBox}>
-            <Text style={styles.headerAffirmationIcon}>🤍</Text>
-            <Text style={styles.headerAffirmationText}>{t(heartAffirmationKey)}</Text>
-          </View>
-        </LinearGradient>
-
-        <View style={styles.bottomActions}>
-          <Text style={styles.actionSubheader}>{t('homeScreen.actions.subheader')}</Text>
-          <TouchableOpacity
-            style={[styles.securityTipsButton, { backgroundColor: ACTION_GRID_BG[currentStatus] }]}
-            onPress={() => setShowSafetyTipsModal(true)}>
-            <Text style={styles.securityTipsTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
-            <Text style={styles.securityTipsDescription}>{t('homeScreen.actions.securityTipsDescription')}</Text>
-            <Text style={styles.securityTipsArrow}>&gt;</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.assessmentHeroCard, { backgroundColor: ASSESSMENT_HERO_BG[currentStatus] }]} onPress={() => router.push('/assessment')}>
-            <Text style={styles.assessmentHeroTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
-            <Text style={styles.assessmentHeroDescription}>{t('homeScreen.actions.startAssessmentDescription')}</Text>
-            <View style={styles.assessmentHeroActionRow}>
-              <Text style={styles.assessmentHeroActionText}>{t('homeScreen.actions.startQuiz')}</Text>
-              <Text style={styles.assessmentHeroArrow}>&gt;</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.actionGridRow}>
-            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowSupportModal(true)}>
-              <Image source={require('../assets/images/image_12.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>{t('homeScreen.support.title')}</Text>
-              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.talkToSomeoneDescription')}</Text>
-              <Text style={styles.actionGridArrow}>&gt;</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/shelters')}>
-              <Image source={require('../assets/images/image_11.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>{t('homeScreen.actions.shelters')}</Text>
-              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.sheltersDescription')}</Text>
-              <Text style={styles.actionGridArrow}>&gt;</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionGridCard, styles.emergencyActionGridCard]}
-              onPress={() => void triggerEmergencyIntervention()}
-              accessibilityRole="button"
-              accessibilityLabel={t('panic.triggerTitle')}>
-              <Text style={styles.actionGridIconEmoji}>🚨</Text>
-              <Text style={[styles.actionGridTitle, styles.emergencyActionGridTitle]}>{t('panic.triggerTitle')}</Text>
-              <Text style={[styles.actionGridDescription, styles.emergencyActionGridDescription]}>
-                {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
-              </Text>
-              <TouchableOpacity style={styles.panicInlineSetupButton} onPress={() => setShowPanicSettingsModal(true)}>
-                <Text style={styles.panicInlineSetupText}>{t('panic.setup.open')}</Text>
+        {showJournalModal ? (
+          <View style={styles.journalPage}>
+            <View style={styles.journalPageHeader}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setShowJournalModal(false)}>
+                <Text style={styles.headerIconText}>←</Text>
               </TouchableOpacity>
-              <Text style={[styles.actionGridArrow, styles.emergencyActionGridArrow]}>&gt;</Text>
+              <Text style={styles.journalPageTitle}>Journal</Text>
+              <View style={styles.journalPageHeaderSpacer} />
+            </View>
+            <Text style={styles.journalSubtitle}>Privately record incidents with date, time, and photo evidence.</Text>
+            <TextInput
+              style={styles.journalTextarea}
+              value={incidentDescription}
+              onChangeText={setIncidentDescription}
+              placeholder="Describe what happened..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              textAlignVertical="top"
+            />
+            {Platform.OS === 'web'
+              ? React.createElement('input', {
+                  ref: fileInputRef,
+                  type: 'file',
+                  accept: 'image/*',
+                  onChange: handleWebFileChange,
+                  style: { display: 'none' },
+                })
+              : null}
+            <View style={styles.journalFormFooter}>
+              <TouchableOpacity style={styles.journalImageButton} onPress={openImagePicker}>
+                <Text style={styles.journalImageButtonText}>📷 + Add Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.journalSaveButton} onPress={saveJournalEntry}>
+                <Text style={styles.journalSaveButtonText}>Save Entry</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.journalClearAllButton} onPress={clearAllJournalEntries}>
+              <Text style={styles.journalClearAllButtonText}>Clear All Entries</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/exit_fund')}>
-              <Image source={require('../assets/images/image_13.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>{t('homeScreen.actions.secureResources')}</Text>
-              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.secureResourcesDescription')}</Text>
-              <Text style={styles.actionGridArrow}>&gt;</Text>
-            </TouchableOpacity>
+            {selectedJournalImage ? (
+              <View style={styles.journalSelectedImageRow}>
+                <Image source={{ uri: selectedJournalImage }} style={styles.journalSelectedImage} />
+                <Text style={styles.journalSelectedImageLabel} numberOfLines={1}>
+                  {selectedJournalImageName || 'Selected image'}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.journalFeed}>
+              {journalEntries.map((entry) => (
+                <View key={entry.id} style={styles.journalEntryCard}>
+                  <Text style={styles.journalEntryTimestamp}>{entry.timestamp}</Text>
+                  {entry.description ? <Text style={styles.journalEntryText}>{entry.description}</Text> : null}
+                  {entry.imageBase64 ? (
+                    <TouchableOpacity onPress={() => setJournalViewerImage(entry.imageBase64 ?? null)}>
+                      <Image source={{ uri: entry.imageBase64 }} style={styles.journalThumb} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <TouchableOpacity style={styles.journalDeleteButton} onPress={() => deleteJournalEntry(entry.id)}>
+                    <Text style={styles.journalDeleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : (
+          <>
+            <View style={styles.headerRow}>
+              <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                <Text style={styles.headerIconText}>←</Text>
+              </TouchableOpacity>
+              <Text style={styles.title}>{t('homeScreen.safeZone')}</Text>
+              <View style={styles.headerRightActions}>
+                <LanguageSwitcher />
+                <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
+                  <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trafficShell}>
+              <View style={styles.headerMainRow}>
+                <View style={styles.trafficHousingSoft}>
+                  <View style={[styles.trafficLightSoft, buildTrafficLightStyle('red')]} />
+                  <View style={[styles.trafficLightSoft, buildTrafficLightStyle('yellow')]} />
+                  <View style={[styles.trafficLightSoft, buildTrafficLightStyle('green')]} />
+                </View>
+                <View style={styles.statusTextWrap}>
+                  <View style={[styles.statusPill, { backgroundColor: headerScenario.pillBg }]}>
+                    <Text style={styles.statusPillText}>{t(headerScenario.pillTextKey)}</Text>
+                  </View>
+                  <Text style={styles.statusMessage}>{t(headerScenario.titleKey)}</Text>
+                  <Text style={styles.statusSubMessage}>{t(headerScenario.descriptionKey)}</Text>
+                </View>
+              </View>
+              <View style={styles.headerAffirmationBox}>
+                <Text style={styles.headerAffirmationIcon}>🤍</Text>
+                <Text style={styles.headerAffirmationText}>{t(heartAffirmationKey)}</Text>
+              </View>
+            </LinearGradient>
+
+            <View style={styles.bottomActions}>
+              <Text style={styles.actionSubheader}>{t('homeScreen.actions.subheader')}</Text>
+              <TouchableOpacity
+                style={[styles.securityTipsButton, { backgroundColor: ACTION_GRID_BG[currentStatus] }]}
+                onPress={() => setShowSafetyTipsModal(true)}>
+                <Text style={styles.securityTipsTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
+                <Text style={styles.securityTipsDescription}>{t('homeScreen.actions.securityTipsDescription')}</Text>
+                <Text style={styles.securityTipsArrow}>&gt;</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.assessmentHeroCard, { backgroundColor: ASSESSMENT_HERO_BG[currentStatus] }]} onPress={() => router.push('/assessment')}>
+                <Text style={styles.assessmentHeroTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
+                <Text style={styles.assessmentHeroDescription}>{t('homeScreen.actions.startAssessmentDescription')}</Text>
+                <View style={styles.assessmentHeroActionRow}>
+                  <Text style={styles.assessmentHeroActionText}>{t('homeScreen.actions.startQuiz')}</Text>
+                  <Text style={styles.assessmentHeroArrow}>&gt;</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.actionGridRow}>
+                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowSupportModal(true)}>
+                  <Image source={require('../assets/images/image_12.png')} style={styles.actionGridIconImage} />
+                  <Text style={styles.actionGridTitle}>{t('homeScreen.support.title')}</Text>
+                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.talkToSomeoneDescription')}</Text>
+                  <Text style={styles.actionGridArrow}>&gt;</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/shelters')}>
+                  <Image source={require('../assets/images/image_11.png')} style={styles.actionGridIconImage} />
+                  <Text style={styles.actionGridTitle}>{t('homeScreen.actions.shelters')}</Text>
+                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.sheltersDescription')}</Text>
+                  <Text style={styles.actionGridArrow}>&gt;</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionGridCard, styles.emergencyActionGridCard]}
+                  onPress={() => void triggerEmergencyIntervention()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('panic.triggerTitle')}>
+                  <Text style={styles.actionGridIconEmoji}>🚨</Text>
+                  <Text style={[styles.actionGridTitle, styles.emergencyActionGridTitle]}>{t('panic.triggerTitle')}</Text>
+                  <Text style={[styles.actionGridDescription, styles.emergencyActionGridDescription]}>
+                    {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
+                  </Text>
+                  <TouchableOpacity style={styles.panicInlineSetupButton} onPress={() => setShowPanicSettingsModal(true)}>
+                    <Text style={styles.panicInlineSetupText}>{t('panic.setup.open')}</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.actionGridArrow, styles.emergencyActionGridArrow]}>&gt;</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/exit_fund')}>
+                  <Image source={require('../assets/images/image_13.png')} style={styles.actionGridIconImage} />
+                  <Text style={styles.actionGridTitle}>{t('homeScreen.actions.secureResources')}</Text>
+                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.secureResourcesDescription')}</Text>
+                  <Text style={styles.actionGridArrow}>&gt;</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowJournalModal(true)}>
+                  <Text style={styles.actionGridIconEmoji}>📓</Text>
+                  <Text style={styles.actionGridTitle}>Journal</Text>
+                  <Text style={styles.actionGridDescription}>Document incidents and keep personal evidence notes.</Text>
+                  <Text style={styles.actionGridArrow}>&gt;</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -1264,5 +1522,163 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '800',
+  },
+  journalPage: {
+    width: '100%',
+  },
+  journalPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  journalPageTitle: {
+    color: '#2D3436',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  journalPageHeaderSpacer: {
+    width: 34,
+    height: 34,
+  },
+  journalSubtitle: {
+    marginTop: 6,
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'left',
+  },
+  journalTextarea: {
+    marginTop: 12,
+    minHeight: 108,
+    borderWidth: 1,
+    borderColor: '#d3dee8',
+    backgroundColor: '#f8fbff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#1f2937',
+    fontSize: 14,
+  },
+  journalFormFooter: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  journalImageButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#dbe4ec',
+    borderRadius: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+  },
+  journalImageButtonText: {
+    color: '#42566b',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  journalSaveButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    backgroundColor: '#e7eef6',
+    alignItems: 'center',
+  },
+  journalSaveButtonText: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  journalClearAllButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fff1f2',
+  },
+  journalClearAllButtonText: {
+    color: '#b91c1c',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  journalSelectedImageRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  journalSelectedImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+  },
+  journalSelectedImageLabel: {
+    flex: 1,
+    color: '#64748b',
+    fontSize: 12,
+  },
+  journalFeed: {
+    marginTop: 14,
+    gap: 10,
+  },
+  journalEntryCard: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  journalEntryTimestamp: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  journalEntryText: {
+    marginTop: 6,
+    color: '#1f2937',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  journalThumb: {
+    marginTop: 8,
+    width: 92,
+    height: 92,
+    borderRadius: 10,
+  },
+  journalDeleteButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  journalDeleteButtonText: {
+    color: '#b91c1c',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  journalImageViewerModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  journalViewerImage: {
+    width: '100%',
+    height: 320,
+    borderRadius: 10,
+    resizeMode: 'contain',
+    backgroundColor: '#f8fafc',
   },
 });
