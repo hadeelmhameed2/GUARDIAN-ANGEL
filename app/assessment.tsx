@@ -1,48 +1,48 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { getCurrentStatus, setCurrentStatus, statusFromScore, type RiskState } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
 
 type AnswerOption = {
-  label: 'Never' | 'Rarely' | 'Sometimes' | 'Often' | 'Always';
+  key: 'never' | 'rarely' | 'sometimes' | 'often' | 'always';
   points: number;
 };
 
 type Question = {
   id: string;
-  category: 'Green' | 'Yellow' | 'Red';
-  text: string;
+  category: 'green' | 'yellow' | 'red';
+  textKey: string;
   isPositive: boolean;
 };
 
 const QUESTIONS: Question[] = [
-  { id: 'g1', category: 'Green', text: 'Do you feel free to see friends/family without fear?', isPositive: true },
-  { id: 'g2', category: 'Green', text: 'Does your partner support your success?', isPositive: true },
-  { id: 'g3', category: 'Green', text: 'Do you have an equal voice in decisions?', isPositive: true },
-  { id: 'y1', category: 'Yellow', text: 'Does your partner monitor your phone/messages?', isPositive: false },
-  { id: 'y2', category: 'Yellow', text: 'Do you experience constant criticism or humiliation?', isPositive: false },
-  { id: 'y3', category: 'Yellow', text: 'Is there a Love Bombing cycle?', isPositive: false },
-  { id: 'r1', category: 'Red', text: 'Do you live in constant fear/alertness at home?', isPositive: false },
-  { id: 'r2', category: 'Red', text: 'Has your partner threatened harm to you or others?', isPositive: false },
-  { id: 'r3', category: 'Red', text: 'Are you denied access to your own money?', isPositive: false },
-  { id: 'r4', category: 'Red', text: 'Are you prevented from work, school, or medical care?', isPositive: false },
+  { id: 'g1', category: 'green', textKey: 'assessment.questions.g1', isPositive: true },
+  { id: 'g2', category: 'green', textKey: 'assessment.questions.g2', isPositive: true },
+  { id: 'g3', category: 'green', textKey: 'assessment.questions.g3', isPositive: true },
+  { id: 'y1', category: 'yellow', textKey: 'assessment.questions.y1', isPositive: false },
+  { id: 'y2', category: 'yellow', textKey: 'assessment.questions.y2', isPositive: false },
+  { id: 'y3', category: 'yellow', textKey: 'assessment.questions.y3', isPositive: false },
+  { id: 'r1', category: 'red', textKey: 'assessment.questions.r1', isPositive: false },
+  { id: 'r2', category: 'red', textKey: 'assessment.questions.r2', isPositive: false },
+  { id: 'r3', category: 'red', textKey: 'assessment.questions.r3', isPositive: false },
+  { id: 'r4', category: 'red', textKey: 'assessment.questions.r4', isPositive: false },
 ];
 
 const OPTIONS: AnswerOption[] = [
-  { label: 'Never', points: 0 },
-  { label: 'Rarely', points: 1 },
-  { label: 'Sometimes', points: 2 },
-  { label: 'Often', points: 3 },
-  { label: 'Always', points: 4 },
+  { key: 'never', points: 0 },
+  { key: 'rarely', points: 1 },
+  { key: 'sometimes', points: 2 },
+  { key: 'often', points: 3 },
+  { key: 'always', points: 4 },
 ];
 
 const CATEGORY_THEME = {
-  Green: { bg: '#E8F5E9', color: '#2E7D32', emoji: '🌿' },
-  Yellow: { bg: '#FEF9E7', color: '#F9A825', emoji: '⚡' },
-  Red: { bg: '#FDECEC', color: '#C62828', emoji: '🔴' },
+  green: { bg: '#E8F5E9', color: '#2E7D32', emoji: '🌿' },
+  yellow: { bg: '#FEF9E7', color: '#F9A825', emoji: '⚡' },
+  red: { bg: '#FDECEC', color: '#C62828', emoji: '🔴' },
 } as const;
 
 const PAGE_GRADIENTS: Record<RiskState, [string, string]> = {
@@ -56,16 +56,25 @@ const BRANCH_TINT: Record<RiskState, string> = {
   green: '#4d6d52',
 };
 
-function scoreAnswer(label: AnswerOption['label'], isPositive: boolean) {
-  const basePoints = OPTIONS.find((option) => option.label === label)?.points ?? 0;
+function scoreAnswer(key: AnswerOption['key'], isPositive: boolean) {
+  const basePoints = OPTIONS.find((option) => option.key === key)?.points ?? 0;
   return isPositive ? 4 - basePoints : basePoints;
 }
 
 export default function AssessmentScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
+  const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const [questionIndex, setQuestionIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)');
+  };
 
   const currentQuestion = QUESTIONS[questionIndex];
   const currentStatus = getCurrentStatus();
@@ -73,8 +82,8 @@ export default function AssessmentScreen() {
   const progressPercent = useMemo(() => ((questionIndex + 1) / QUESTIONS.length) * 100, [questionIndex]);
   const categoryTheme = CATEGORY_THEME[currentQuestion.category];
 
-  const handleAnswer = async (label: AnswerOption['label']) => {
-    const points = scoreAnswer(label, currentQuestion.isPositive);
+  const handleAnswer = async (key: AnswerOption['key']) => {
+    const points = scoreAnswer(key, currentQuestion.isPositive);
     const nextScore = totalScore + points;
     const isFinal = questionIndex === QUESTIONS.length - 1;
 
@@ -98,7 +107,7 @@ export default function AssessmentScreen() {
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { direction }]}>
       <View pointerEvents="none" style={styles.branchOverlayWrap}>
         <Image
           source={require('../assets/images/traffic-light-bg.png')}
@@ -106,10 +115,10 @@ export default function AssessmentScreen() {
         />
       </View>
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.headerIconButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.headerIconButton} onPress={handleBack}>
           <Image source={require('../assets/images/turn-back.png')} style={styles.backArrowImage} />
         </TouchableOpacity>
-        <Text style={styles.title}>Status Assessment</Text>
+        <Text style={styles.title}>{t('assessment.title')}</Text>
         <TouchableOpacity style={styles.headerIconButton} onPress={() => router.replace('/(tabs)')}>
           <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
         </TouchableOpacity>
@@ -123,27 +132,29 @@ export default function AssessmentScreen() {
         <View style={styles.questionHeader}>
           <View style={[styles.categoryBadge, { backgroundColor: categoryTheme.bg }]}>
             <Text style={styles.categoryEmoji}>{categoryTheme.emoji}</Text>
-            <Text style={[styles.categoryText, { color: categoryTheme.color }]}>{currentQuestion.category}</Text>
+            <Text style={[styles.categoryText, { color: categoryTheme.color }]}>
+              {t(`assessment.categories.${currentQuestion.category}`)}
+            </Text>
           </View>
-          <Text style={styles.progress}>Question {progressLabel}</Text>
+          <Text style={styles.progress}>{t('assessment.questionLabel', { value: progressLabel })}</Text>
         </View>
-        <Text style={styles.body}>{currentQuestion.text}</Text>
+        <Text style={styles.body}>{t(currentQuestion.textKey)}</Text>
       </View>
 
       <View style={styles.optionsWrap}>
         {OPTIONS.map((option) => (
           <TouchableOpacity
-            key={option.label}
+            key={option.key}
             style={styles.button}
             activeOpacity={0.7}
-            onPress={() => void handleAnswer(option.label)}>
-            <Text style={styles.buttonText}>{option.label}</Text>
+            onPress={() => void handleAnswer(option.key)}>
+            <Text style={styles.buttonText}>{t(`assessment.options.${option.key}`)}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <View style={styles.footerWrap}>
-        <Text style={styles.footerText}>Your answers are private and secure</Text>
+        <Text style={styles.footerText}>{t('assessment.footer')}</Text>
       </View>
     </SafeAreaView>
     </LinearGradient>

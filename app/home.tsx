@@ -5,6 +5,7 @@ import {
   Image,
   Linking,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import {
   getCurrentStatus,
   addTrustedContact,
@@ -25,6 +27,8 @@ import {
   type RiskState,
 } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { getPanicSettings, savePanicSettings } from '@/src/panic-settings';
 
 const HEADER_GRADIENTS = {
   red: ['#fdecec', '#f9dede', '#f7e8e6'],
@@ -46,35 +50,35 @@ const BRANCH_TINT: Record<RiskState, string> = {
 const STATUS_SCENARIOS = {
   red: {
     pillBg: '#FDECEC',
-    pillText: 'HIGH RISK',
-    title: 'Your relationship may be unsafe.',
-    description: 'Your answers indicate severe risk indicators. Seek immediate help.',
+    pillTextKey: 'homeScreen.status.redPill',
+    titleKey: 'homeScreen.status.redTitle',
+    descriptionKey: 'homeScreen.status.redDescription',
   },
   yellow: {
     pillBg: '#FEF9E7',
-    pillText: 'MEDIUM RISK',
-    title: 'Concerns detected.',
-    description: 'Some warning signs require review. See resources.',
+    pillTextKey: 'homeScreen.status.yellowPill',
+    titleKey: 'homeScreen.status.yellowTitle',
+    descriptionKey: 'homeScreen.status.yellowDescription',
   },
   green: {
     pillBg: '#E8F5E9',
-    pillText: 'LOW RISK',
-    title: 'Your safety baseline looks stable.',
-    description: 'Continue checking in and keep support resources nearby.',
+    pillTextKey: 'homeScreen.status.greenPill',
+    titleKey: 'homeScreen.status.greenTitle',
+    descriptionKey: 'homeScreen.status.greenDescription',
   },
 } as const;
 
 const HEART_AFFIRMATIONS = {
-  red: "Your safety is our top priority. Please reach out to a professional or a trusted person immediately. You are not alone.",
-  yellow: 'Trust your intuition. You are not overreacting. It is okay to seek support and explore your options.',
-  green: "It's a good day to check in with yourself. Prioritizing your well-being is a sign of strength.",
+  red: 'homeScreen.affirmation.red',
+  yellow: 'homeScreen.affirmation.yellow',
+  green: 'homeScreen.affirmation.green',
 } as const;
 
 const SAFETY_TIPS = [
-  'Trust your intuition: If something feels off, it usually is.',
-  'Digital Privacy: Use incognito mode for sensitive searches.',
-  "Emergency Code: Set a 'safe word' with your trusted contact.",
-  "Location Safety: Keep your GPS off when it's not strictly necessary.",
+  'homeScreen.safetyTips.tip1',
+  'homeScreen.safetyTips.tip2',
+  'homeScreen.safetyTips.tip3',
+  'homeScreen.safetyTips.tip4',
 ];
 
 const ASSESSMENT_HERO_BG = {
@@ -91,6 +95,8 @@ const ACTION_GRID_BG = {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
+  const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const [currentStatus, setStatus] = useState<RiskState>(getCurrentStatus());
   const [trustedContactName, setTrustedContactName] = useState('');
@@ -99,7 +105,18 @@ export default function HomeScreen() {
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showSafetyTipsModal, setShowSafetyTipsModal] = useState(false);
+  const [showPanicSettingsModal, setShowPanicSettingsModal] = useState(false);
+  const [isTriggeringEmergency, setIsTriggeringEmergency] = useState(false);
+  const [panicPhoneNumber, setPanicPhoneNumber] = useState('');
+  const [panicMessage, setPanicMessage] = useState('');
   const isUnlocked = hasSecureSessionAccess();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)');
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -108,17 +125,22 @@ export default function HomeScreen() {
       const contacts = getTrustedContacts();
       setTrustedContactsState(contacts);
       setShowEmergencyModal(nextStatus === 'red');
+      void (async () => {
+        const settings = await getPanicSettings();
+        setPanicPhoneNumber(settings.phoneNumber);
+        setPanicMessage(settings.emergencyMessage);
+      })();
     }, []),
   );
 
   const saveTrustedContact = async () => {
     if (!isUnlocked) return;
     if (trustedContacts.length >= 2) {
-      Alert.alert('Limit Reached', 'You can save up to 2 trusted contacts.');
+      Alert.alert(t('homeScreen.alerts.limitReachedTitle'), t('homeScreen.alerts.limitReachedMessage'));
       return;
     }
     if (!trustedContactPhone.trim()) {
-      Alert.alert('Missing Number', 'Add a phone number to enable Support call access.');
+      Alert.alert(t('homeScreen.alerts.missingNumberTitle'), t('homeScreen.alerts.missingNumberMessage'));
       return;
     }
     await addTrustedContact({ name: trustedContactName, phone: trustedContactPhone });
@@ -131,13 +153,13 @@ export default function HomeScreen() {
   const openDialer = async (phone: string, fallbackAlert: string) => {
     const sanitized = phone.replace(/[^\d+]/g, '');
     if (!sanitized) {
-      Alert.alert('Unavailable', fallbackAlert);
+      Alert.alert(t('homeScreen.alerts.unavailableTitle'), fallbackAlert);
       return;
     }
     const telUrl = `tel:${sanitized}`;
     const canOpen = await Linking.canOpenURL(telUrl);
     if (!canOpen) {
-      Alert.alert('Unavailable', 'Dialer is not available on this device.');
+      Alert.alert(t('homeScreen.alerts.unavailableTitle'), t('homeScreen.alerts.dialerUnavailable'));
       return;
     }
     // Do not change routes here: user should stay on current screen after dialing/canceling.
@@ -150,10 +172,62 @@ export default function HomeScreen() {
     setTrustedContactsState(next);
   };
 
+  const savePanicSetup = async () => {
+    const nextPhone = panicPhoneNumber.trim();
+    const nextMessage = panicMessage.trim();
+    if (!nextPhone || !nextMessage) {
+      Alert.alert(t('panic.setup.errorTitle'), t('panic.setup.required'));
+      return;
+    }
+    try {
+      await savePanicSettings({
+        phoneNumber: nextPhone,
+        emergencyMessage: nextMessage,
+      });
+      setShowPanicSettingsModal(false);
+      Alert.alert(t('panic.setup.savedTitle'), t('panic.setup.savedMessage'));
+    } catch {
+      Alert.alert(t('panic.setup.errorTitle'), t('panic.setup.saveError'));
+    }
+  };
+
+  const triggerEmergencyIntervention = async () => {
+    if (isTriggeringEmergency) return;
+    setIsTriggeringEmergency(true);
+
+    try {
+      const settings = await getPanicSettings();
+      const phoneNumber = settings.phoneNumber.trim();
+      const emergencyMessage = settings.emergencyMessage.trim();
+      if (!phoneNumber || !emergencyMessage) {
+        Alert.alert(t('panic.setup.errorTitle'), t('panic.setup.required'));
+        setShowPanicSettingsModal(true);
+        return;
+      }
+
+      const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(emergencyMessage)}`;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = smsUrl;
+      } else {
+        const canOpen = await Linking.canOpenURL(smsUrl);
+        if (!canOpen) {
+          Alert.alert(t('panic.unavailableTitle'), t('panic.unavailableMessage'));
+          return;
+        }
+        await Linking.openURL(smsUrl);
+      }
+      Alert.alert(t('panic.completedTitle'), t('panic.completedMessage'));
+    } catch {
+      Alert.alert(t('panic.failedTitle'), t('panic.failedMessage'));
+    } finally {
+      setIsTriggeringEmergency(false);
+    }
+  };
+
   const headerScenario = STATUS_SCENARIOS[currentStatus];
   const headerGradient = HEADER_GRADIENTS[currentStatus];
   const pageGradient = PAGE_GRADIENTS[currentStatus];
-  const heartAffirmation = HEART_AFFIRMATIONS[currentStatus];
+  const heartAffirmationKey = HEART_AFFIRMATIONS[currentStatus];
 
   const buildTrafficLightStyle = (light: RiskState) => {
     const isActive = light === currentStatus;
@@ -176,7 +250,7 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient colors={pageGradient} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { direction }]}>
       <View pointerEvents="none" style={styles.branchOverlayWrap}>
         <Image
           source={require('../assets/images/traffic-light-bg.png')}
@@ -186,10 +260,10 @@ export default function HomeScreen() {
       <Modal visible={showEmergencyModal} transparent animationType="fade">
         <View style={styles.emergencyOverlay}>
           <View style={styles.emergencyContent}>
-            <Text style={styles.emergencyTitle}>EMERGENCY PROTOCOL ACTIVATED</Text>
-            <Text style={styles.emergencyMessage}>Safety measures are now in progress.</Text>
+            <Text style={styles.emergencyTitle}>{t('homeScreen.emergency.title')}</Text>
+            <Text style={styles.emergencyMessage}>{t('homeScreen.emergency.message')}</Text>
             <TouchableOpacity style={styles.emergencyButton} onPress={() => setShowEmergencyModal(false)}>
-              <Text style={styles.emergencyButtonText}>Understood</Text>
+              <Text style={styles.emergencyButtonText}>{t('homeScreen.emergency.understood')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -197,45 +271,49 @@ export default function HomeScreen() {
       <Modal visible={showSupportModal} transparent animationType="fade" onRequestClose={() => setShowSupportModal(false)}>
         <View style={styles.supportOverlay}>
           <View style={styles.supportModal}>
-            <Text style={styles.supportModalTitle}>Talk to someone</Text>
-            <TouchableOpacity style={styles.supportActionButton} onPress={() => void openDialer('100', 'Unable to prepare the police call.')}>
-              <Text style={styles.supportActionText}>🚨 Police (100)</Text>
+            <Text style={styles.supportModalTitle}>{t('homeScreen.support.title')}</Text>
+            <TouchableOpacity
+              style={styles.supportActionButton}
+              onPress={() => void openDialer('100', t('homeScreen.support.fallbackPolice'))}>
+              <Text style={styles.supportActionText}>🚨 {t('homeScreen.support.police')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.supportActionButton}
-              onPress={() => void openDialer('118', 'Unable to prepare the emergency hotline call.')}>
-              <Text style={styles.supportActionText}>🛡️ National Hotline (118)</Text>
+              onPress={() => void openDialer('118', t('homeScreen.support.fallbackHotline'))}>
+              <Text style={styles.supportActionText}>🛡️ {t('homeScreen.support.hotline')}</Text>
             </TouchableOpacity>
             {trustedContacts.map((contact, index) => (
               <TouchableOpacity
                 key={`support-contact-${index}`}
                 style={styles.supportActionButton}
-                onPress={() => void openDialer(contact.phone, 'Please add a valid contact first.')}>
-                <Text style={styles.supportActionText}>👤 {contact.name || `Custom Contact ${index + 1}`}</Text>
+                onPress={() => void openDialer(contact.phone, t('homeScreen.support.fallbackInvalidContact'))}>
+                <Text style={styles.supportActionText}>
+                  👤 {contact.name || t('homeScreen.support.customContact', { index: index + 1 })}
+                </Text>
               </TouchableOpacity>
             ))}
             {trustedContacts.length === 0 ? (
-              <Text style={styles.supportEmptyText}>Add trusted contacts below to enable one-tap calling.</Text>
+              <Text style={styles.supportEmptyText}>{t('homeScreen.support.addContactsHint')}</Text>
             ) : null}
             <View style={styles.contactInputWrap}>
               <TextInput
                 style={styles.contactInput}
                 value={trustedContactName}
                 onChangeText={setTrustedContactName}
-                placeholder="Trusted Contact Name (optional)"
+                placeholder={t('homeScreen.support.trustedNamePlaceholder')}
                 placeholderTextColor="#9ca3af"
               />
               <TextInput
                 style={styles.contactInput}
                 value={trustedContactPhone}
                 onChangeText={setTrustedContactPhone}
-                placeholder="Trusted Contact Phone"
+                placeholder={t('homeScreen.support.trustedPhonePlaceholder')}
                 placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
               />
               <TouchableOpacity style={styles.contactSaveButton} onPress={() => void saveTrustedContact()}>
                 <Text style={styles.contactSaveButtonText}>
-                  {trustedContacts.length > 0 ? 'Add / Update Contact' : 'Save Contact'}
+                  {trustedContacts.length > 0 ? t('homeScreen.support.addOrUpdate') : t('homeScreen.support.saveContact')}
                 </Text>
               </TouchableOpacity>
               {trustedContacts.length > 0 ? (
@@ -244,8 +322,12 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={`modal-call-${index}`}
                       style={styles.removePill}
-                      onPress={() => void openDialer(contact.phone, 'Please add contact first.')}>
-                      <Text style={styles.removePillText}>Call {contact.name || `Contact ${index + 1}`}</Text>
+                      onPress={() => void openDialer(contact.phone, t('homeScreen.support.fallbackAddContact'))}>
+                      <Text style={styles.removePillText}>
+                        {t('homeScreen.support.callContact', {
+                          name: contact.name || t('homeScreen.support.contact', { index: index + 1 }),
+                        })}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                   {trustedContacts.map((_, index) => (
@@ -253,14 +335,14 @@ export default function HomeScreen() {
                       key={`modal-remove-${index}`}
                       style={styles.removePill}
                       onPress={() => void removeTrustedContact(index)}>
-                      <Text style={styles.removePillText}>Remove {index + 1}</Text>
+                      <Text style={styles.removePillText}>{t('homeScreen.support.removeContact', { index: index + 1 })}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ) : null}
             </View>
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSupportModal(false)}>
-              <Text style={styles.supportCloseText}>Close</Text>
+              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -273,19 +355,54 @@ export default function HomeScreen() {
         <View style={styles.supportOverlay}>
           <View style={styles.safetyTipsModal}>
             <View style={styles.safetyTipsHeader}>
-              <Text style={styles.safetyTipsTitle}>Safety Tips</Text>
+              <Text style={styles.safetyTipsTitle}>{t('homeScreen.safetyTips.title')}</Text>
               <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
                 <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
               </TouchableOpacity>
             </View>
-            {SAFETY_TIPS.map((tip) => (
-              <View key={tip} style={styles.safetyTipRow}>
+            {SAFETY_TIPS.map((tipKey) => (
+              <View key={tipKey} style={styles.safetyTipRow}>
                 <Text style={styles.safetyTipIcon}>🛡️</Text>
-                <Text style={styles.safetyTipText}>{tip}</Text>
+                <Text style={styles.safetyTipText}>{t(tipKey)}</Text>
               </View>
             ))}
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSafetyTipsModal(false)}>
-              <Text style={styles.supportCloseText}>Got it</Text>
+              <Text style={styles.supportCloseText}>{t('common.gotIt')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showPanicSettingsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPanicSettingsModal(false)}>
+        <View style={styles.supportOverlay}>
+          <View style={styles.supportModal}>
+            <Text style={styles.supportModalTitle}>{t('panic.setup.title')}</Text>
+            <Text style={styles.supportEmptyText}>{t('panic.setup.subtitle')}</Text>
+            <TextInput
+              style={styles.contactInput}
+              value={panicPhoneNumber}
+              onChangeText={setPanicPhoneNumber}
+              placeholder={t('panic.setup.phonePlaceholder')}
+              placeholderTextColor="#9ca3af"
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              style={[styles.contactInput, styles.panicMessageInput]}
+              value={panicMessage}
+              onChangeText={setPanicMessage}
+              placeholder={t('panic.setup.messagePlaceholder')}
+              placeholderTextColor="#9ca3af"
+              multiline
+              textAlignVertical="top"
+            />
+            <TouchableOpacity style={styles.contactSaveButton} onPress={() => void savePanicSetup()}>
+              <Text style={styles.contactSaveButtonText}>{t('panic.setup.save')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowPanicSettingsModal(false)}>
+              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -293,13 +410,16 @@ export default function HomeScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Text style={styles.headerIconText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Safe Zone</Text>
-          <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
-            <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
-          </TouchableOpacity>
+          <Text style={styles.title}>{t('homeScreen.safeZone')}</Text>
+          <View style={styles.headerRightActions}>
+            <LanguageSwitcher />
+            <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
+              <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trafficShell}>
@@ -311,54 +431,67 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statusTextWrap}>
               <View style={[styles.statusPill, { backgroundColor: headerScenario.pillBg }]}>
-                <Text style={styles.statusPillText}>{headerScenario.pillText}</Text>
+                <Text style={styles.statusPillText}>{t(headerScenario.pillTextKey)}</Text>
               </View>
-              <Text style={styles.statusMessage}>{headerScenario.title}</Text>
-              <Text style={styles.statusSubMessage}>{headerScenario.description}</Text>
+              <Text style={styles.statusMessage}>{t(headerScenario.titleKey)}</Text>
+              <Text style={styles.statusSubMessage}>{t(headerScenario.descriptionKey)}</Text>
             </View>
           </View>
           <View style={styles.headerAffirmationBox}>
             <Text style={styles.headerAffirmationIcon}>🤍</Text>
-            <Text style={styles.headerAffirmationText}>{heartAffirmation}</Text>
+            <Text style={styles.headerAffirmationText}>{t(heartAffirmationKey)}</Text>
           </View>
         </LinearGradient>
 
         <View style={styles.bottomActions}>
-          <Text style={styles.actionSubheader}>What you can do</Text>
+          <Text style={styles.actionSubheader}>{t('homeScreen.actions.subheader')}</Text>
           <TouchableOpacity
             style={[styles.securityTipsButton, { backgroundColor: ACTION_GRID_BG[currentStatus] }]}
             onPress={() => setShowSafetyTipsModal(true)}>
-            <Text style={styles.securityTipsTitle}>Security Tips</Text>
-            <Text style={styles.securityTipsDescription}>Quick practical actions to protect yourself right now.</Text>
+            <Text style={styles.securityTipsTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
+            <Text style={styles.securityTipsDescription}>{t('homeScreen.actions.securityTipsDescription')}</Text>
             <Text style={styles.securityTipsArrow}>&gt;</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.assessmentHeroCard, { backgroundColor: ASSESSMENT_HERO_BG[currentStatus] }]} onPress={() => router.push('/assessment')}>
-            <Text style={styles.assessmentHeroTitle}>Start Status Assessment</Text>
-            <Text style={styles.assessmentHeroDescription}>
-              Identify your risk level and get personalized safety guidance based on your current situation.
-            </Text>
+            <Text style={styles.assessmentHeroTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
+            <Text style={styles.assessmentHeroDescription}>{t('homeScreen.actions.startAssessmentDescription')}</Text>
             <View style={styles.assessmentHeroActionRow}>
-              <Text style={styles.assessmentHeroActionText}>Start Quiz</Text>
+              <Text style={styles.assessmentHeroActionText}>{t('homeScreen.actions.startQuiz')}</Text>
               <Text style={styles.assessmentHeroArrow}>&gt;</Text>
             </View>
           </TouchableOpacity>
           <View style={styles.actionGridRow}>
             <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowSupportModal(true)}>
               <Image source={require('../assets/images/image_12.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>Talk to someone</Text>
-              <Text style={styles.actionGridDescription}>Reach out to a trusted person or support line.</Text>
+              <Text style={styles.actionGridTitle}>{t('homeScreen.support.title')}</Text>
+              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.talkToSomeoneDescription')}</Text>
               <Text style={styles.actionGridArrow}>&gt;</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/shelters')}>
               <Image source={require('../assets/images/image_11.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>Shelters</Text>
-              <Text style={styles.actionGridDescription}>Prepare steps for when you need to leave.</Text>
+              <Text style={styles.actionGridTitle}>{t('homeScreen.actions.shelters')}</Text>
+              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.sheltersDescription')}</Text>
               <Text style={styles.actionGridArrow}>&gt;</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionGridCard, styles.emergencyActionGridCard]}
+              onPress={() => void triggerEmergencyIntervention()}
+              accessibilityRole="button"
+              accessibilityLabel={t('panic.triggerTitle')}>
+              <Text style={styles.actionGridIconEmoji}>🚨</Text>
+              <Text style={[styles.actionGridTitle, styles.emergencyActionGridTitle]}>{t('panic.triggerTitle')}</Text>
+              <Text style={[styles.actionGridDescription, styles.emergencyActionGridDescription]}>
+                {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
+              </Text>
+              <TouchableOpacity style={styles.panicInlineSetupButton} onPress={() => setShowPanicSettingsModal(true)}>
+                <Text style={styles.panicInlineSetupText}>{t('panic.setup.open')}</Text>
+              </TouchableOpacity>
+              <Text style={[styles.actionGridArrow, styles.emergencyActionGridArrow]}>&gt;</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/exit_fund')}>
               <Image source={require('../assets/images/image_13.png')} style={styles.actionGridIconImage} />
-              <Text style={styles.actionGridTitle}>Secure resources</Text>
-              <Text style={styles.actionGridDescription}>Safely save money or important documents.</Text>
+              <Text style={styles.actionGridTitle}>{t('homeScreen.actions.secureResources')}</Text>
+              <Text style={styles.actionGridDescription}>{t('homeScreen.actions.secureResourcesDescription')}</Text>
               <Text style={styles.actionGridArrow}>&gt;</Text>
             </TouchableOpacity>
           </View>
@@ -409,6 +542,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
     gap: 10,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   backButton: {
     width: 34,
@@ -666,6 +804,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
   },
+  panicMessageInput: {
+    minHeight: 96,
+  },
   contactSaveButton: {
     marginTop: 4,
     alignSelf: 'flex-start',
@@ -867,10 +1008,12 @@ const styles = StyleSheet.create({
   },
   actionGridRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 10,
   },
   actionGridCard: {
-    flex: 1,
+    width: '48.5%',
     minHeight: 176,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -882,10 +1025,20 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
   },
+  emergencyActionGridCard: {
+    backgroundColor: '#7f1d1d',
+    borderColor: '#ef4444',
+    shadowColor: '#7f1d1d',
+    shadowOpacity: 0.22,
+  },
   actionGridIconImage: {
     width: 22,
     height: 22,
     resizeMode: 'contain',
+    marginBottom: 8,
+  },
+  actionGridIconEmoji: {
+    fontSize: 22,
     marginBottom: 8,
   },
   actionGridTitle: {
@@ -894,6 +1047,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'left',
     writingDirection: 'ltr',
+  },
+  emergencyActionGridTitle: {
+    color: '#fff',
   },
   actionGridDescription: {
     marginTop: 8,
@@ -904,11 +1060,32 @@ const styles = StyleSheet.create({
     writingDirection: 'ltr',
     flex: 1,
   },
+  emergencyActionGridDescription: {
+    color: '#fee2e2',
+  },
   actionGridArrow: {
     color: '#64748b',
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'left',
+  },
+  emergencyActionGridArrow: {
+    color: '#fff',
+  },
+  panicInlineSetupButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  panicInlineSetupText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   supportOverlay: {
     flex: 1,

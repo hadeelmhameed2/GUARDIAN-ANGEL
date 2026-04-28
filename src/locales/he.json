@@ -1,0 +1,232 @@
+{
+  "common": {
+    "home": "בית",
+    "close": "סגור",
+    "save": "שמור",
+    "apply": "החל",
+    "back": "חזרה",
+    "gotIt": "הבנתי",
+    "processing": "מעבד..."
+  },
+  "tabs": {
+    "home": "בית",
+    "explore": "גילוי"
+  },
+  "modal": {
+    "title": "זהו חלון קופץ",
+    "goHome": "לעבור למסך הבית"
+  },
+  "language": {
+    "label": "שפה",
+    "english": "אנגלית",
+    "hebrew": "עברית",
+    "arabic": "ערבית"
+  },
+  "assessment": {
+    "title": "הערכת מצב",
+    "questionLabel": "שאלה {{value}}",
+    "footer": "התשובות שלך פרטיות ומאובטחות",
+    "categories": {
+      "green": "ירוק",
+      "yellow": "צהוב",
+      "red": "אדום"
+    },
+    "options": {
+      "never": "לעולם לא",
+      "rarely": "לעיתים רחוקות",
+      "sometimes": "לפעמים",
+      "often": "לעיתים קרובות",
+      "always": "תמיד"
+    },
+    "questions": {
+      "g1": "האם את מרגישה חופשייה לראות חברים/משפחה ללא פחד?",
+      "g2": "האם בן/בת הזוג תומכים בהצלחה שלך?",
+      "g3": "האם יש לך קול שווה בקבלת החלטות?",
+      "y1": "האם בן/בת הזוג עוקבים אחרי הטלפון/הודעות שלך?",
+      "y2": "האם את חווה ביקורת מתמדת או השפלה?",
+      "y3": "האם קיים מחזור של Love Bombing?",
+      "r1": "האם את חיה בפחד מתמיד/דריכות בבית?",
+      "r2": "האם בן/בת הזוג איימו לפגוע בך או באחרים?",
+      "r3": "האם נמנעת ממך גישה לכסף שלך?",
+      "r4": "האם מונעים ממך עבודה, לימודים או טיפול רפואי?"
+    }
+  },
+  "homeScreen": {
+    "safeZone": "אזור בטוח",
+    "emergency": {
+      "title": "נוהל חירום הופעל",
+      "message": "אמצעי הבטיחות מתבצעים כעת.",
+      "understood": "הבנתי"
+    },
+    "alerts": {
+      "limitReachedTitle": "הגעת למגבלה",
+      "limitReachedMessage": "אפשר לשמור עד 2 אנשי קשר מהימנים.",
+      "missingNumberTitle": "חסר מספר",
+      "missingNumberMessage": "הוסיפי מספר טלפון כדי לאפשר שיחת תמיכה.",
+      "unavailableTitle": "לא זמין",
+      "dialerUnavailable": "חייגן אינו זמין במכשיר זה."
+    },
+    "status": {
+      "redPill": "סיכון גבוה",
+      "redTitle": "ייתכן שהקשר אינו בטוח.",
+      "redDescription": "התשובות מצביעות על סימני סיכון חמורים. פני לעזרה מיידית.",
+      "yellowPill": "סיכון בינוני",
+      "yellowTitle": "זוהו חששות.",
+      "yellowDescription": "יש סימני אזהרה שדורשים בדיקה. עייני במשאבים.",
+      "greenPill": "סיכון נמוך",
+      "greenTitle": "מצב הבטיחות הבסיסי נראה יציב.",
+      "greenDescription": "המשיכי לעקוב ולהחזיק משאבי תמיכה קרובים."
+    },
+    "affirmation": {
+      "red": "הבטיחות שלך היא בראש סדר העדיפויות שלנו. פני מיד לאיש מקצוע או לאדם מהימן. את לא לבד.",
+      "yellow": "סמכי על האינטואיציה שלך. את לא מגזימה. מותר לך לבקש תמיכה ולבחון אפשרויות.",
+      "green": "זה יום טוב לבדוק מה שלומך. לשים את הרווחה שלך בראש זו עוצמה."
+    },
+    "support": {
+      "title": "לדבר עם מישהו",
+      "police": "משטרה (100)",
+      "hotline": "קו חם לאומי (118)",
+      "customContact": "איש קשר מותאם {{index}}",
+      "contact": "איש קשר {{index}}",
+      "addContactsHint": "הוסיפי אנשי קשר מהימנים למטה לשיחה בלחיצה אחת.",
+      "trustedNamePlaceholder": "שם איש קשר מהימן (אופציונלי)",
+      "trustedPhonePlaceholder": "טלפון איש קשר מהימן",
+      "addOrUpdate": "הוסף / עדכן איש קשר",
+      "saveContact": "שמור איש קשר",
+      "callContact": "התקשר/י אל {{name}}",
+      "removeContact": "הסר {{index}}",
+      "fallbackPolice": "לא ניתן להכין שיחה למשטרה.",
+      "fallbackHotline": "לא ניתן להכין שיחת קו חירום.",
+      "fallbackInvalidContact": "נא להוסיף קודם איש קשר תקין.",
+      "fallbackAddContact": "נא להוסיף קודם איש קשר."
+    },
+    "safetyTips": {
+      "title": "טיפים לבטיחות",
+      "tip1": "סמכי על האינטואיציה: אם משהו מרגיש לא נכון, כנראה שהוא לא נכון.",
+      "tip2": "פרטיות דיגיטלית: השתמשי בגלישה בסתר לחיפושים רגישים.",
+      "tip3": "קוד חירום: קבעי 'מילת ביטחון' עם איש קשר מהימן.",
+      "tip4": "בטיחות מיקום: השאירי GPS כבוי כשאין צורך אמיתי."
+    },
+    "actions": {
+      "subheader": "מה אפשר לעשות",
+      "securityTipsTitle": "טיפים לאבטחה",
+      "securityTipsDescription": "פעולות מהירות ומעשיות להגנה עלייך עכשיו.",
+      "startAssessmentTitle": "התחלת הערכת מצב",
+      "startAssessmentDescription": "זהי את רמת הסיכון וקבלי הנחיות בטיחות מותאמות למצבך.",
+      "startQuiz": "התחל/י שאלון",
+      "talkToSomeoneDescription": "פני לאדם מהימן או לקו תמיכה.",
+      "shelters": "מקלטים",
+      "sheltersDescription": "הכיני צעדים למקרה שתצטרכי לעזוב.",
+      "secureResources": "אבטחת משאבים",
+      "secureResourcesDescription": "שמירה בטוחה של כסף או מסמכים חשובים."
+    }
+  },
+  "panic": {
+    "triggerTitle": "כפתור חירום",
+    "triggerDescription": "לחצי כדי להכין טיוטות SMS ואימייל עם המיקום החי שלך.",
+    "triggering": "מכין התערבות חירום...",
+    "settingsButton": "הגדרות איש קשר לחירום",
+    "setup": {
+      "title": "הגדרות כפתור חירום",
+      "subtitle": "הגדירי מספר חירום והודעה שישמשו את כפתור החירום.",
+      "phonePlaceholder": "מספר איש קשר לחירום",
+      "messagePlaceholder": "הודעת חירום (לדוגמה: אני צריכה עזרה, אני ב-[Location])",
+      "save": "שמור",
+      "open": "הגדרות",
+      "required": "נא להזין מספר איש קשר והודעת חירום תחילה.",
+      "savedTitle": "נשמר",
+      "savedMessage": "הגדרות החירום נשמרו בהצלחה.",
+      "errorTitle": "נדרשת הגדרה",
+      "saveError": "לא ניתן לשמור הגדרות. נסי שוב."
+    },
+    "missingContactTitle": "אין איש קשר לחירום",
+    "missingContactMessage": "הגדירי איש קשר לחירום לפני שימוש בכפתור.",
+    "permissions": {
+      "title": "נדרשת הרשאת מיקום",
+      "message": "נדרשת גישה למיקום כדי לצרף קואורדינטות בזמן אמת."
+    },
+    "smsBody": "התראת חירום עבור {{name}}. ייתכן שאני זקוקה לעזרה מיידית. המיקום שלי: {{mapsLink}}",
+    "emailSubject": "התראת התערבות חירום",
+    "emailBody": "התראת חירום עבור {{name}}.\n\nייתכן שאני זקוקה לעזרה מיידית.\n\nמיקום חי: {{mapsLink}}\nקואורדינטות: {{latitude}}, {{longitude}}",
+    "defaultContactName": "איש הקשר שלי לחירום",
+    "unavailableTitle": "ערוצי התראה לא זמינים",
+    "unavailableMessage": "SMS ואימייל אינם זמינים כרגע במכשיר זה.",
+    "completedTitle": "התראת חירום מוכנה",
+    "completedMessage": "נפתחו טיוטות הודעות חירום לבדיקה ושליחה.",
+    "failedTitle": "כפתור החירום נכשל",
+    "failedMessage": "לא ניתן להכין את ההתערבות. נסי שוב.",
+    "settings": {
+      "title": "הגדרות חירום Core",
+      "subtitle": "שמרי את איש הקשר המהימן שישמש את כפתור החירום.",
+      "nameLabel": "שם איש קשר",
+      "namePlaceholder": "הזיני שם איש קשר לחירום",
+      "phoneLabel": "מספר טלפון",
+      "phonePlaceholder": "הזיני מספר טלפון לחירום",
+      "emailLabel": "כתובת אימייל",
+      "emailPlaceholder": "הזיני אימייל לחירום",
+      "saveLabel": "שמור איש קשר לחירום",
+      "savingLabel": "שומר...",
+      "requiredMessage": "שם, טלפון ואימייל הם שדות חובה.",
+      "successTitle": "נשמר",
+      "successMessage": "פרטי איש הקשר לחירום נשמרו בהצלחה.",
+      "errorTitle": "לא ניתן לשמור",
+      "saveErrorMessage": "אנא נסי שוב."
+    }
+  },
+  "exitFund": {
+    "title": "קרן יציאה",
+    "financialOxygen": "חמצן פיננסי",
+    "independenceFund": "קרן עצמאות משוערת",
+    "mainAccount": "חשבון ראשי מדומה: {{value}}",
+    "goalProgress": "{{value}}% מהיעד",
+    "emergencyActive": "נוהל חירום פעיל: התחילה סימולציית משיכה אוטומטית",
+    "safeNow": "בטוח עכשיו",
+    "targetBuffer": "כרית ביטחון יעד",
+    "targetHint": "הגדירי יעד פרטי בין 500 ל-5,000 ש״ח.",
+    "targetPlaceholder": "הזיני יעד",
+    "saved": "נשמר!",
+    "goalLine": "יעד: {{limit}} (מומן {{percent}}%)",
+    "roundupHistory": "היסטוריית עיגול עסקאות",
+    "roundupsApplied": "עיגולים הוחלו",
+    "applyRoundups": "החל עיגולים (+{{amount}} ש\"ח)",
+    "simulatedTransactions": "עסקאות מדומות",
+    "customAmountPlaceholder": "הזיני סכום מותאם",
+    "noTransactions": "עדיין אין עסקאות מדומות.",
+    "backSafeZone": "חזרה לאזור הבטוח",
+    "notes": {
+      "emergencyTransfer": "העברה זעירה בחירום",
+      "dailyRoundups": "עיגולי רכישות יומיים",
+      "manualDeposit": "הפקדה ידנית",
+      "manualExpense": "הוצאה ידנית"
+    },
+    "mockPurchases": {
+      "busTicket": "כרטיס אוטובוס",
+      "groceries": "מצרכים",
+      "pharmacy": "בית מרקחת",
+      "coffee": "קפה"
+    }
+  },
+  "explore": {
+    "title": "גילוי",
+    "description": "האפליקציה כוללת קוד דוגמה כדי לעזור לך להתחיל.",
+    "routingTitle": "ניווט מבוסס קבצים",
+    "routingLine1": "לאפליקציה הזו יש שני מסכים:",
+    "routingLine2": "קובץ הפריסה ב-",
+    "routingLine3": "מגדיר את ניווט הלשוניות.",
+    "learnMore": "למד/י עוד",
+    "platformTitle": "תמיכה באנדרואיד, iOS ואתר",
+    "platformDescription": "אפשר לפתוח את הפרויקט באנדרואיד, iOS ובווב. כדי לפתוח את גרסת הווב, לחצי על",
+    "imagesTitle": "תמונות",
+    "imagesDescription": "לתמונות סטטיות אפשר להשתמש בסיומות",
+    "imagesDescriptionTail": "כדי לספק קבצים לצפיפויות מסך שונות",
+    "themeTitle": "רכיבי מצב בהיר/כהה",
+    "themeDescription": "לתבנית הזו יש תמיכה במצב בהיר וכהה. הקרס",
+    "themeDescriptionTail": "מאפשר לבדוק את מצב הצבע הנוכחי של המשתמש ולהתאים צבעים בהתאם.",
+    "animationsTitle": "אנימציות",
+    "animationsDescription": "התבנית כוללת דוגמה לרכיב מונפש. הרכיב",
+    "animationsDescriptionTail": "משתמש בספרייה החזקה",
+    "animationsDescriptionEnd": "כדי ליצור אנימציית נופוף יד.",
+    "iosParallaxDescription": "הרכיב",
+    "iosParallaxDescriptionTail": "מספק אפקט פרלקסה לתמונת הכותרת."
+  }
+}

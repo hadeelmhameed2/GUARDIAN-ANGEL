@@ -1,0 +1,219 @@
+import { useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import {
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import { getEmergencyContact, saveEmergencyContact } from '@/src/emergency-contact';
+
+export default function CoreSettingsScreen() {
+  const router = useRouter();
+  const { t, i18n } = useTranslation();
+  const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/home');
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        const data = await getEmergencyContact();
+        setName(data.name);
+        setPhone(data.phone);
+        setEmail(data.email);
+      })();
+    }, []),
+  );
+
+  const onSave = async () => {
+    const nextName = name.trim();
+    const nextPhone = phone.trim();
+    const nextEmail = email.trim();
+
+    if (!nextName || !nextPhone || !nextEmail) {
+      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.requiredMessage'));
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await saveEmergencyContact({ name: nextName, phone: nextPhone, email: nextEmail });
+      Alert.alert(t('panic.settings.successTitle'), t('panic.settings.successMessage'));
+    } catch {
+      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <LinearGradient colors={['#E8F5E9', '#FAF3E0']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
+      <SafeAreaView style={[styles.container, { direction }]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityRole="button">
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>{t('panic.settings.title')}</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.subtitle}>{t('panic.settings.subtitle')}</Text>
+            <Text style={styles.label}>{t('panic.settings.nameLabel')}</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t('panic.settings.namePlaceholder')}
+              style={styles.input}
+              placeholderTextColor="#9ca3af"
+            />
+            <Text style={styles.label}>{t('panic.settings.phoneLabel')}</Text>
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder={t('panic.settings.phonePlaceholder')}
+              style={styles.input}
+              placeholderTextColor="#9ca3af"
+            />
+            <Text style={styles.label}>{t('panic.settings.emailLabel')}</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder={t('panic.settings.emailPlaceholder')}
+              style={styles.input}
+              placeholderTextColor="#9ca3af"
+            />
+
+            <TouchableOpacity
+              style={[styles.saveButton, isSaving ? styles.saveButtonDisabled : null]}
+              onPress={() => void onSave()}
+              disabled={isSaving}
+              accessibilityRole="button">
+              <Text style={styles.saveButtonText}>
+                {isSaving ? t('panic.settings.savingLabel') : t('panic.settings.saveLabel')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  pageGradient: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 28,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  title: {
+    flex: 1,
+    color: '#2D3436',
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'left',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  subtitle: {
+    color: '#4B5563',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  label: {
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d3dee8',
+    backgroundColor: '#f8fbff',
+    color: '#1f2937',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  saveButton: {
+    marginTop: 8,
+    borderRadius: 14,
+    backgroundColor: '#b91c1c',
+    paddingVertical: 14,
+    shadowColor: '#7f1d1d',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    textAlign: 'center',
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+});

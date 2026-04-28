@@ -1,0 +1,232 @@
+{
+  "common": {
+    "home": "الرئيسية",
+    "close": "إغلاق",
+    "save": "حفظ",
+    "apply": "تطبيق",
+    "back": "رجوع",
+    "gotIt": "فهمت",
+    "processing": "جارٍ المعالجة..."
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "explore": "استكشاف"
+  },
+  "modal": {
+    "title": "هذه نافذة منبثقة",
+    "goHome": "الذهاب إلى الشاشة الرئيسية"
+  },
+  "language": {
+    "label": "اللغة",
+    "english": "الإنجليزية",
+    "hebrew": "العبرية",
+    "arabic": "العربية"
+  },
+  "assessment": {
+    "title": "تقييم الحالة",
+    "questionLabel": "السؤال {{value}}",
+    "footer": "إجاباتك خاصة وآمنة",
+    "categories": {
+      "green": "أخضر",
+      "yellow": "أصفر",
+      "red": "أحمر"
+    },
+    "options": {
+      "never": "أبدًا",
+      "rarely": "نادرًا",
+      "sometimes": "أحيانًا",
+      "often": "غالبًا",
+      "always": "دائمًا"
+    },
+    "questions": {
+      "g1": "هل تشعرين بحرية رؤية الأصدقاء/العائلة دون خوف؟",
+      "g2": "هل يدعم شريكك نجاحك؟",
+      "g3": "هل لديك صوت متساوٍ في القرارات؟",
+      "y1": "هل يراقب شريكك هاتفك/رسائلك؟",
+      "y2": "هل تتعرضين لانتقاد مستمر أو إهانة؟",
+      "y3": "هل توجد دورة Love Bombing؟",
+      "r1": "هل تعيشين في خوف/يقظة مستمرة في المنزل؟",
+      "r2": "هل هدد شريكك بإيذائك أو إيذاء الآخرين؟",
+      "r3": "هل تُمنعين من الوصول إلى أموالك؟",
+      "r4": "هل تُمنعين من العمل أو الدراسة أو الرعاية الطبية؟"
+    }
+  },
+  "homeScreen": {
+    "safeZone": "المنطقة الآمنة",
+    "emergency": {
+      "title": "تم تفعيل بروتوكول الطوارئ",
+      "message": "إجراءات الأمان قيد التنفيذ الآن.",
+      "understood": "مفهوم"
+    },
+    "alerts": {
+      "limitReachedTitle": "تم الوصول للحد",
+      "limitReachedMessage": "يمكنك حفظ جهتي اتصال موثوقتين كحد أقصى.",
+      "missingNumberTitle": "رقم مفقود",
+      "missingNumberMessage": "أضيفي رقم هاتف لتفعيل الاتصال بالدعم.",
+      "unavailableTitle": "غير متاح",
+      "dialerUnavailable": "تطبيق الاتصال غير متاح على هذا الجهاز."
+    },
+    "status": {
+      "redPill": "خطر مرتفع",
+      "redTitle": "قد تكون العلاقة غير آمنة.",
+      "redDescription": "تشير إجاباتك إلى مؤشرات خطر شديدة. اطلبي المساعدة فورًا.",
+      "yellowPill": "خطر متوسط",
+      "yellowTitle": "تم اكتشاف مؤشرات مقلقة.",
+      "yellowDescription": "هناك إشارات تحذيرية تحتاج مراجعة. راجعي الموارد.",
+      "greenPill": "خطر منخفض",
+      "greenTitle": "يبدو مستوى الأمان الأساسي مستقرًا.",
+      "greenDescription": "واصلي المتابعة واحتفظي بموارد الدعم قريبة."
+    },
+    "affirmation": {
+      "red": "سلامتك هي أولويتنا القصوى. تواصلي فورًا مع مختص أو شخص موثوق. لستِ وحدك.",
+      "yellow": "ثقي بحدسك. أنتِ لا تبالغين. من حقك طلب الدعم واستكشاف الخيارات.",
+      "green": "هذا يوم جيد للاطمئنان على نفسك. إعطاء الأولوية لرفاهك علامة قوة."
+    },
+    "support": {
+      "title": "التحدث مع شخص",
+      "police": "الشرطة (100)",
+      "hotline": "الخط الوطني (118)",
+      "customContact": "جهة اتصال مخصصة {{index}}",
+      "contact": "جهة اتصال {{index}}",
+      "addContactsHint": "أضيفي جهات اتصال موثوقة أدناه لتفعيل الاتصال بضغطة واحدة.",
+      "trustedNamePlaceholder": "اسم جهة الاتصال الموثوقة (اختياري)",
+      "trustedPhonePlaceholder": "هاتف جهة الاتصال الموثوقة",
+      "addOrUpdate": "إضافة / تحديث جهة اتصال",
+      "saveContact": "حفظ جهة الاتصال",
+      "callContact": "اتصال بـ {{name}}",
+      "removeContact": "إزالة {{index}}",
+      "fallbackPolice": "تعذر تجهيز اتصال الشرطة.",
+      "fallbackHotline": "تعذر تجهيز اتصال الخط الساخن.",
+      "fallbackInvalidContact": "يرجى إضافة جهة اتصال صالحة أولًا.",
+      "fallbackAddContact": "يرجى إضافة جهة اتصال أولًا."
+    },
+    "safetyTips": {
+      "title": "نصائح الأمان",
+      "tip1": "ثقي بحدسك: إذا بدا الأمر غير مريح، فغالبًا هو كذلك.",
+      "tip2": "الخصوصية الرقمية: استخدمي التصفح الخفي للبحث الحساس.",
+      "tip3": "رمز طوارئ: حددي كلمة أمان مع جهة اتصال موثوقة.",
+      "tip4": "أمان الموقع: أبقي GPS مغلقًا عندما لا تكون هناك حاجة فعلية."
+    },
+    "actions": {
+      "subheader": "ما الذي يمكنك فعله",
+      "securityTipsTitle": "نصائح الأمان",
+      "securityTipsDescription": "خطوات عملية سريعة لحمايتك الآن.",
+      "startAssessmentTitle": "بدء تقييم الحالة",
+      "startAssessmentDescription": "حددي مستوى الخطر واحصلي على إرشادات أمان مخصصة لوضعك الحالي.",
+      "startQuiz": "ابدئي الاختبار",
+      "talkToSomeoneDescription": "تواصلي مع شخص موثوق أو خط دعم.",
+      "shelters": "الملاجئ",
+      "sheltersDescription": "حضّري خطواتك عندما تحتاجين للمغادرة.",
+      "secureResources": "تأمين الموارد",
+      "secureResourcesDescription": "احفظي المال أو المستندات المهمة بأمان."
+    }
+  },
+  "panic": {
+    "triggerTitle": "زر الطوارئ",
+    "triggerDescription": "اضغطي لإعداد مسودات SMS والبريد مع موقعك المباشر.",
+    "triggering": "جارٍ تجهيز تدخل الطوارئ...",
+    "settingsButton": "إعدادات جهة اتصال الطوارئ",
+    "setup": {
+      "title": "إعدادات زر الطوارئ",
+      "subtitle": "حددي رقم الطوارئ والرسالة التي سيستخدمها زر الطوارئ.",
+      "phonePlaceholder": "رقم جهة اتصال الطوارئ",
+      "messagePlaceholder": "رسالة الطوارئ (مثال: أحتاج مساعدة، أنا في [Location])",
+      "save": "حفظ",
+      "open": "الإعدادات",
+      "required": "يرجى إدخال رقم الطوارئ ورسالة الطوارئ أولًا.",
+      "savedTitle": "تم الحفظ",
+      "savedMessage": "تم حفظ إعدادات الطوارئ بنجاح.",
+      "errorTitle": "الإعداد مطلوب",
+      "saveError": "تعذر حفظ الإعدادات. يرجى المحاولة مرة أخرى."
+    },
+    "missingContactTitle": "جهة اتصال الطوارئ غير موجودة",
+    "missingContactMessage": "يرجى إعداد جهة اتصال الطوارئ قبل استخدام الزر.",
+    "permissions": {
+      "title": "مطلوب إذن الموقع",
+      "message": "نحتاج إلى الموقع لإرفاق الإحداثيات المباشرة."
+    },
+    "smsBody": "تنبيه طوارئ إلى {{name}}. قد أحتاج مساعدة فورية. موقعي المباشر: {{mapsLink}}",
+    "emailSubject": "تنبيه تدخل طارئ",
+    "emailBody": "تنبيه طوارئ إلى {{name}}.\n\nقد أحتاج مساعدة فورية.\n\nالموقع المباشر: {{mapsLink}}\nالإحداثيات: {{latitude}}, {{longitude}}",
+    "defaultContactName": "جهة اتصال الطوارئ",
+    "unavailableTitle": "قنوات التنبيه غير متاحة",
+    "unavailableMessage": "SMS والبريد غير متاحين حاليًا على هذا الجهاز.",
+    "completedTitle": "تنبيه الطوارئ جاهز",
+    "completedMessage": "تم فتح مسودات رسائل الطوارئ للمراجعة والإرسال.",
+    "failedTitle": "فشل زر الطوارئ",
+    "failedMessage": "تعذر تجهيز تدخل الطوارئ. حاولي مرة أخرى.",
+    "settings": {
+      "title": "إعدادات طوارئ Core",
+      "subtitle": "احفظي جهة الاتصال الموثوقة المستخدمة في زر الطوارئ.",
+      "nameLabel": "اسم جهة الاتصال",
+      "namePlaceholder": "أدخلي اسم جهة اتصال الطوارئ",
+      "phoneLabel": "رقم الهاتف",
+      "phonePlaceholder": "أدخلي رقم طوارئ",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخلي بريد الطوارئ",
+      "saveLabel": "حفظ جهة اتصال الطوارئ",
+      "savingLabel": "جارٍ الحفظ...",
+      "requiredMessage": "الاسم والهاتف والبريد حقول مطلوبة.",
+      "successTitle": "تم الحفظ",
+      "successMessage": "تم حفظ تفاصيل جهة اتصال الطوارئ بنجاح.",
+      "errorTitle": "تعذر الحفظ",
+      "saveErrorMessage": "يرجى المحاولة مرة أخرى."
+    }
+  },
+  "exitFund": {
+    "title": "صندوق الخروج",
+    "financialOxygen": "أكسجين مالي",
+    "independenceFund": "صندوق استقلال تقديري",
+    "mainAccount": "الحساب الرئيسي المحاكى: {{value}}",
+    "goalProgress": "{{value}}% من الهدف",
+    "emergencyActive": "بروتوكول الطوارئ نشط: بدأت محاكاة السحب التلقائي",
+    "safeNow": "آمنة الآن",
+    "targetBuffer": "هدف وسادة الأمان",
+    "targetHint": "حددي هدفًا خاصًا بين 500 و5,000 شيكل.",
+    "targetPlaceholder": "أدخلي حد الهدف",
+    "saved": "تم الحفظ!",
+    "goalLine": "الهدف: {{limit}} (ممّول {{percent}}%)",
+    "roundupHistory": "سجل تقريب المشتريات",
+    "roundupsApplied": "تم تطبيق التقريبات",
+    "applyRoundups": "تطبيق التقريبات (+{{amount}} شيكل)",
+    "simulatedTransactions": "معاملات محاكاة",
+    "customAmountPlaceholder": "أدخلي مبلغًا مخصصًا",
+    "noTransactions": "لا توجد معاملات محاكاة بعد.",
+    "backSafeZone": "العودة إلى المنطقة الآمنة",
+    "notes": {
+      "emergencyTransfer": "تحويل طوارئ مصغر",
+      "dailyRoundups": "تقريبات المشتريات اليومية",
+      "manualDeposit": "إيداع يدوي",
+      "manualExpense": "مصروف يدوي"
+    },
+    "mockPurchases": {
+      "busTicket": "تذكرة حافلة",
+      "groceries": "بقالة",
+      "pharmacy": "صيدلية",
+      "coffee": "قهوة"
+    }
+  },
+  "explore": {
+    "title": "استكشاف",
+    "description": "يتضمن هذا التطبيق أمثلة كود لمساعدتك على البدء.",
+    "routingTitle": "التوجيه المعتمد على الملفات",
+    "routingLine1": "يحتوي هذا التطبيق على شاشتين:",
+    "routingLine2": "ملف التخطيط في",
+    "routingLine3": "يقوم بإعداد موجه التبويب.",
+    "learnMore": "اعرف المزيد",
+    "platformTitle": "دعم Android وiOS والويب",
+    "platformDescription": "يمكنك فتح هذا المشروع على Android وiOS والويب. لفتح نسخة الويب اضغطي",
+    "imagesTitle": "الصور",
+    "imagesDescription": "للصور الثابتة يمكنك استخدام اللاحقتين",
+    "imagesDescriptionTail": "لتوفير ملفات لكثافات شاشة مختلفة",
+    "themeTitle": "مكونات الوضع الفاتح والداكن",
+    "themeDescription": "هذا القالب يدعم الوضع الفاتح والداكن. تُمكّنك دالة",
+    "themeDescriptionTail": "من معرفة نظام الألوان الحالي للمستخدم لتعديل ألوان الواجهة وفقًا لذلك.",
+    "animationsTitle": "الرسوم المتحركة",
+    "animationsDescription": "يتضمن هذا القالب مثالًا لمكون متحرك. مكون",
+    "animationsDescriptionTail": "يستخدم مكتبة",
+    "animationsDescriptionEnd": "القوية لإنشاء حركة تلويح اليد.",
+    "iosParallaxDescription": "يوفر المكون",
+    "iosParallaxDescriptionTail": "تأثير اختلاف المنظر لصورة الرأس."
+  }
+}

@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -32,10 +32,10 @@ const EMERGENCY_TRANSFER_AMOUNT = 10;
 const EMERGENCY_TRANSFER_INTERVAL_MS = 4000;
 const LIMIT_PRESETS = [500, 1000, 3000, 5000];
 const MOCK_PURCHASES = [
-  { id: 'p1', label: 'Bus Ticket', amount: 18.2 },
-  { id: 'p2', label: 'Groceries', amount: 74.35 },
-  { id: 'p3', label: 'Pharmacy', amount: 53.6 },
-  { id: 'p4', label: 'Coffee', amount: 14.9 },
+  { id: 'p1', labelKey: 'exitFund.mockPurchases.busTicket', amount: 18.2 },
+  { id: 'p2', labelKey: 'exitFund.mockPurchases.groceries', amount: 74.35 },
+  { id: 'p3', labelKey: 'exitFund.mockPurchases.pharmacy', amount: 53.6 },
+  { id: 'p4', labelKey: 'exitFund.mockPurchases.coffee', amount: 14.9 },
 ];
 
 const PAGE_GRADIENTS: Record<RiskState, [string, string, string]> = {
@@ -51,6 +51,8 @@ const BRANCH_TINT: Record<RiskState, string> = {
 
 export default function ExitFundScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
+  const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const seedData = getExitFundData();
   const [balance, setBalance] = useState(seedData.exitFundBalance);
@@ -62,6 +64,13 @@ export default function ExitFundScreen() {
   const [isEmergencyActive, setIsEmergencyActive] = useState(getIsEmergencyActive());
   const [roundupsApplied, setRoundupsApplied] = useState(false);
   const [bufferSaved, setBufferSaved] = useState(false);
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)');
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -104,7 +113,7 @@ export default function ExitFundScreen() {
             id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
             amount: transferable,
             createdAt: new Date().toISOString(),
-            note: 'Emergency micro-transfer',
+            note: t('exitFund.notes.emergencyTransfer'),
           };
           const nextTransactions = [nextTransaction, ...saved.transactions].slice(0, 8);
           setBalance(nextBalance);
@@ -121,7 +130,7 @@ export default function ExitFundScreen() {
       }, EMERGENCY_TRANSFER_INTERVAL_MS);
 
       return () => clearInterval(intervalId);
-    }, [isEmergencyActive]),
+    }, [isEmergencyActive, t]),
   );
 
   const balanceLabel = useMemo(() => `${balance.toFixed(2)} ILS`, [balance]);
@@ -185,7 +194,7 @@ export default function ExitFundScreen() {
       id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       amount: roundupsTotal,
       createdAt: new Date().toISOString(),
-      note: 'Daily purchase round-ups',
+      note: t('exitFund.notes.dailyRoundups'),
     };
     const nextTransactions = [nextTransaction, ...transactions].slice(0, 8);
     setBalance(nextBalance);
@@ -209,7 +218,7 @@ export default function ExitFundScreen() {
     const parsed = Number(transactionInput);
     if (!Number.isFinite(parsed) || parsed === 0) return;
     const normalized = Number(parsed.toFixed(2));
-    const note = normalized > 0 ? 'Manual deposit' : 'Manual expense';
+    const note = normalized > 0 ? t('exitFund.notes.manualDeposit') : t('exitFund.notes.manualExpense');
     await addSimulatedTransaction(normalized, note);
     setTransactionInput('');
   };
@@ -221,7 +230,7 @@ export default function ExitFundScreen() {
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { direction }]}>
       <View pointerEvents="none" style={styles.branchOverlayWrap}>
         <Image
           source={require('../assets/images/traffic-light-bg.png')}
@@ -234,10 +243,10 @@ export default function ExitFundScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.headerIconButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.headerIconButton} onPress={handleBack}>
             <Image source={require('../assets/images/turn-back.png')} style={styles.backArrowImage} />
           </TouchableOpacity>
-          <Text style={styles.title}>Exit Fund</Text>
+          <Text style={styles.title}>{t('exitFund.title')}</Text>
           <TouchableOpacity style={styles.headerIconButton} onPress={() => router.replace('/(tabs)')}>
             <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
           </TouchableOpacity>
@@ -246,23 +255,23 @@ export default function ExitFundScreen() {
         <View style={styles.balanceCard}>
           <View style={styles.balanceCardHeader}>
             <Text style={styles.balanceEmoji}>💰</Text>
-            <Text style={styles.balanceLabel}>Financial Oxygen</Text>
+            <Text style={styles.balanceLabel}>{t('exitFund.financialOxygen')}</Text>
           </View>
           <View style={styles.balanceRow}>
             <Text style={styles.balance}>{balanceLabel}</Text>
             {isEmergencyActive ? (
               <View style={styles.processingWrap}>
                 <ActivityIndicator size="small" color="#b45309" />
-                <Text style={styles.processingText}>Processing...</Text>
+                <Text style={styles.processingText}>{t('common.processing')}</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.note}>Estimated Independence Fund</Text>
+          <Text style={styles.note}>{t('exitFund.independenceFund')}</Text>
           <View style={styles.progressBarWrap}>
             <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
           </View>
-          <Text style={styles.progressPercent}>{progressPercent}% of goal</Text>
-          <Text style={styles.mainAccountText}>Simulated Main Account: {mainBalanceLabel}</Text>
+          <Text style={styles.progressPercent}>{t('exitFund.goalProgress', { value: progressPercent })}</Text>
+          <Text style={styles.mainAccountText}>{t('exitFund.mainAccount', { value: mainBalanceLabel })}</Text>
         </View>
 
         {isEmergencyActive ? (
@@ -270,11 +279,11 @@ export default function ExitFundScreen() {
             <View style={styles.emergencyBannerRow}>
               <Text style={styles.emergencyBannerEmoji}>🚨</Text>
               <Text style={styles.emergencyBannerText}>
-                Emergency Protocol Active: Automated Withdrawal Simulation Started
+                {t('exitFund.emergencyActive')}
               </Text>
             </View>
             <TouchableOpacity style={styles.safeNowButton} onPress={() => void handleSafeNow()}>
-              <Text style={styles.safeNowButtonText}>Safe Now</Text>
+              <Text style={styles.safeNowButtonText}>{t('exitFund.safeNow')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -282,23 +291,23 @@ export default function ExitFundScreen() {
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionEmoji}>🎯</Text>
-            <Text style={styles.sectionTitle}>Target Security Buffer</Text>
+            <Text style={styles.sectionTitle}>{t('exitFund.targetBuffer')}</Text>
           </View>
-          <Text style={styles.helperText}>Set a private goal between 500 and 5,000 ILS.</Text>
+          <Text style={styles.helperText}>{t('exitFund.targetHint')}</Text>
           <View style={styles.limitRow}>
             <TextInput
               value={targetInput}
               onChangeText={setTargetInput}
               keyboardType="number-pad"
               style={styles.limitInput}
-              placeholder="Enter target limit"
+              placeholder={t('exitFund.targetPlaceholder')}
               placeholderTextColor="#9ca3af"
             />
             <TouchableOpacity style={styles.limitSaveButton} onPress={() => void saveTargetLimit(targetInput)}>
-              <Text style={styles.limitSaveButtonText}>Save</Text>
+              <Text style={styles.limitSaveButtonText}>{t('common.save')}</Text>
             </TouchableOpacity>
           </View>
-          {bufferSaved ? <Text style={styles.savedText}>✓ Saved!</Text> : null}
+          {bufferSaved ? <Text style={styles.savedText}>✓ {t('exitFund.saved')}</Text> : null}
           <View style={styles.presetRow}>
             {LIMIT_PRESETS.map((preset) => (
               <TouchableOpacity
@@ -312,21 +321,21 @@ export default function ExitFundScreen() {
             ))}
           </View>
           <Text style={styles.progressText}>
-            Goal: {limitLabel} ({progressPercent}% funded)
+            {t('exitFund.goalLine', { limit: limitLabel, percent: progressPercent })}
           </Text>
         </View>
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionEmoji}>🔄</Text>
-            <Text style={styles.sectionTitle}>Round-up Transaction History</Text>
+            <Text style={styles.sectionTitle}>{t('exitFund.roundupHistory')}</Text>
           </View>
           {MOCK_PURCHASES.map((purchase) => {
             const roundup = Number((Math.ceil(purchase.amount) - purchase.amount).toFixed(2));
             return (
               <View key={purchase.id} style={styles.txRow}>
                 <Text style={styles.txNote}>
-                  {purchase.label} - {purchase.amount.toFixed(2)} ILS
+                  {t(purchase.labelKey)} - {purchase.amount.toFixed(2)} ILS
                 </Text>
                 <Text style={styles.txInflow}>+{roundup.toFixed(2)} ILS</Text>
               </View>
@@ -336,7 +345,9 @@ export default function ExitFundScreen() {
             style={[styles.actionButton, roundupsApplied ? styles.actionButtonDisabled : null]}
             onPress={() => void applyRoundups()}>
             <Text style={styles.actionButtonText}>
-              {roundupsApplied ? '✓ Round-ups Applied' : `Apply Round-ups (+${roundupsTotal.toFixed(2)} ILS)`}
+              {roundupsApplied
+                ? `✓ ${t('exitFund.roundupsApplied')}`
+                : t('exitFund.applyRoundups', { amount: roundupsTotal.toFixed(2) })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -344,7 +355,7 @@ export default function ExitFundScreen() {
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionEmoji}>📊</Text>
-            <Text style={styles.sectionTitle}>Simulated Transactions</Text>
+            <Text style={styles.sectionTitle}>{t('exitFund.simulatedTransactions')}</Text>
           </View>
           <View style={styles.customTransactionRow}>
             <TextInput
@@ -352,15 +363,15 @@ export default function ExitFundScreen() {
               onChangeText={setTransactionInput}
               keyboardType="numeric"
               style={styles.transactionInput}
-              placeholder="Enter custom amount"
+              placeholder={t('exitFund.customAmountPlaceholder')}
               placeholderTextColor="#9CA3AF"
             />
             <TouchableOpacity style={styles.actionButton} onPress={() => void applyCustomTransaction()}>
-              <Text style={styles.actionButtonText}>Apply</Text>
+              <Text style={styles.actionButtonText}>{t('common.apply')}</Text>
             </TouchableOpacity>
           </View>
           {transactions.length === 0 ? (
-            <Text style={styles.emptyLabel}>No simulated transactions yet.</Text>
+            <Text style={styles.emptyLabel}>{t('exitFund.noTransactions')}</Text>
           ) : (
             transactions.map((tx) => (
               <View key={tx.id} style={styles.txRow}>
@@ -374,9 +385,9 @@ export default function ExitFundScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <View style={styles.backButtonContent}>
-            <Text style={styles.backButtonText}>Back to Safe Zone</Text>
+            <Text style={styles.backButtonText}>{t('exitFund.backSafeZone')}</Text>
             <Text style={styles.backButtonEmoji}>🏠</Text>
           </View>
         </TouchableOpacity>

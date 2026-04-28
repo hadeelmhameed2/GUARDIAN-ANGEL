@@ -1,0 +1,232 @@
+{
+  "common": {
+    "home": "Home",
+    "close": "Close",
+    "save": "Save",
+    "apply": "Apply",
+    "back": "Back",
+    "gotIt": "Got it",
+    "processing": "Processing..."
+  },
+  "tabs": {
+    "home": "Home",
+    "explore": "Explore"
+  },
+  "modal": {
+    "title": "This is a modal",
+    "goHome": "Go to home screen"
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "hebrew": "Hebrew",
+    "arabic": "Arabic"
+  },
+  "assessment": {
+    "title": "Status Assessment",
+    "questionLabel": "Question {{value}}",
+    "footer": "Your answers are private and secure",
+    "categories": {
+      "green": "Green",
+      "yellow": "Yellow",
+      "red": "Red"
+    },
+    "options": {
+      "never": "Never",
+      "rarely": "Rarely",
+      "sometimes": "Sometimes",
+      "often": "Often",
+      "always": "Always"
+    },
+    "questions": {
+      "g1": "Do you feel free to see friends/family without fear?",
+      "g2": "Does your partner support your success?",
+      "g3": "Do you have an equal voice in decisions?",
+      "y1": "Does your partner monitor your phone/messages?",
+      "y2": "Do you experience constant criticism or humiliation?",
+      "y3": "Is there a Love Bombing cycle?",
+      "r1": "Do you live in constant fear/alertness at home?",
+      "r2": "Has your partner threatened harm to you or others?",
+      "r3": "Are you denied access to your own money?",
+      "r4": "Are you prevented from work, school, or medical care?"
+    }
+  },
+  "homeScreen": {
+    "safeZone": "Safe Zone",
+    "emergency": {
+      "title": "EMERGENCY PROTOCOL ACTIVATED",
+      "message": "Safety measures are now in progress.",
+      "understood": "Understood"
+    },
+    "alerts": {
+      "limitReachedTitle": "Limit Reached",
+      "limitReachedMessage": "You can save up to 2 trusted contacts.",
+      "missingNumberTitle": "Missing Number",
+      "missingNumberMessage": "Add a phone number to enable Support call access.",
+      "unavailableTitle": "Unavailable",
+      "dialerUnavailable": "Dialer is not available on this device."
+    },
+    "status": {
+      "redPill": "HIGH RISK",
+      "redTitle": "Your relationship may be unsafe.",
+      "redDescription": "Your answers indicate severe risk indicators. Seek immediate help.",
+      "yellowPill": "MEDIUM RISK",
+      "yellowTitle": "Concerns detected.",
+      "yellowDescription": "Some warning signs require review. See resources.",
+      "greenPill": "LOW RISK",
+      "greenTitle": "Your safety baseline looks stable.",
+      "greenDescription": "Continue checking in and keep support resources nearby."
+    },
+    "affirmation": {
+      "red": "Your safety is our top priority. Please reach out to a professional or a trusted person immediately. You are not alone.",
+      "yellow": "Trust your intuition. You are not overreacting. It is okay to seek support and explore your options.",
+      "green": "It's a good day to check in with yourself. Prioritizing your well-being is a sign of strength."
+    },
+    "support": {
+      "title": "Talk to someone",
+      "police": "Police (100)",
+      "hotline": "National Hotline (118)",
+      "customContact": "Custom Contact {{index}}",
+      "contact": "Contact {{index}}",
+      "addContactsHint": "Add trusted contacts below to enable one-tap calling.",
+      "trustedNamePlaceholder": "Trusted Contact Name (optional)",
+      "trustedPhonePlaceholder": "Trusted Contact Phone",
+      "addOrUpdate": "Add / Update Contact",
+      "saveContact": "Save Contact",
+      "callContact": "Call {{name}}",
+      "removeContact": "Remove {{index}}",
+      "fallbackPolice": "Unable to prepare the police call.",
+      "fallbackHotline": "Unable to prepare the emergency hotline call.",
+      "fallbackInvalidContact": "Please add a valid contact first.",
+      "fallbackAddContact": "Please add contact first."
+    },
+    "safetyTips": {
+      "title": "Safety Tips",
+      "tip1": "Trust your intuition: If something feels off, it usually is.",
+      "tip2": "Digital Privacy: Use incognito mode for sensitive searches.",
+      "tip3": "Emergency Code: Set a 'safe word' with your trusted contact.",
+      "tip4": "Location Safety: Keep your GPS off when it's not strictly necessary."
+    },
+    "actions": {
+      "subheader": "What you can do",
+      "securityTipsTitle": "Security Tips",
+      "securityTipsDescription": "Quick practical actions to protect yourself right now.",
+      "startAssessmentTitle": "Start Status Assessment",
+      "startAssessmentDescription": "Identify your risk level and get personalized safety guidance based on your current situation.",
+      "startQuiz": "Start Quiz",
+      "talkToSomeoneDescription": "Reach out to a trusted person or support line.",
+      "shelters": "Shelters",
+      "sheltersDescription": "Prepare steps for when you need to leave.",
+      "secureResources": "Secure resources",
+      "secureResourcesDescription": "Safely save money or important documents."
+    }
+  },
+  "panic": {
+    "triggerTitle": "Emergency Trigger",
+    "triggerDescription": "Tap to draft urgent SMS and email alerts with your live location.",
+    "triggering": "Preparing emergency intervention...",
+    "settingsButton": "Emergency Contact Settings",
+    "setup": {
+      "title": "Panic Button Settings",
+      "subtitle": "Set the emergency phone number and message used by the trigger.",
+      "phonePlaceholder": "Emergency Contact Number",
+      "messagePlaceholder": "Emergency Message (e.g., I need help, I am at [Location])",
+      "save": "Save",
+      "open": "Settings",
+      "required": "Please add both emergency contact number and message first.",
+      "savedTitle": "Saved",
+      "savedMessage": "Emergency settings were saved successfully.",
+      "errorTitle": "Setup required",
+      "saveError": "Unable to save settings. Please try again."
+    },
+    "missingContactTitle": "Emergency contact missing",
+    "missingContactMessage": "Set up your emergency contact before using the trigger.",
+    "permissions": {
+      "title": "Location permission needed",
+      "message": "Location access is required to include your live coordinates."
+    },
+    "smsBody": "Emergency alert for {{name}}. I may need immediate help. My live location: {{mapsLink}}",
+    "emailSubject": "Emergency Intervention Alert",
+    "emailBody": "Emergency alert for {{name}}.\n\nI may need immediate help.\n\nLive location: {{mapsLink}}\nCoordinates: {{latitude}}, {{longitude}}",
+    "defaultContactName": "my emergency contact",
+    "unavailableTitle": "Alert channels unavailable",
+    "unavailableMessage": "SMS and email are currently unavailable on this device.",
+    "completedTitle": "Emergency alert ready",
+    "completedMessage": "Emergency message drafts were opened for review and sending.",
+    "failedTitle": "Emergency trigger failed",
+    "failedMessage": "Unable to prepare the emergency intervention. Try again.",
+    "settings": {
+      "title": "Core Emergency Settings",
+      "subtitle": "Save the trusted contact used by the emergency trigger.",
+      "nameLabel": "Contact Name",
+      "namePlaceholder": "Enter emergency contact name",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "Enter emergency phone number",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "Enter emergency email",
+      "saveLabel": "Save Emergency Contact",
+      "savingLabel": "Saving...",
+      "requiredMessage": "Name, phone, and email are required.",
+      "successTitle": "Saved",
+      "successMessage": "Emergency contact details were saved successfully.",
+      "errorTitle": "Unable to save",
+      "saveErrorMessage": "Please try again."
+    }
+  },
+  "exitFund": {
+    "title": "Exit Fund",
+    "financialOxygen": "Financial Oxygen",
+    "independenceFund": "Estimated Independence Fund",
+    "mainAccount": "Simulated Main Account: {{value}}",
+    "goalProgress": "{{value}}% of goal",
+    "emergencyActive": "Emergency Protocol Active: Automated Withdrawal Simulation Started",
+    "safeNow": "Safe Now",
+    "targetBuffer": "Target Security Buffer",
+    "targetHint": "Set a private goal between 500 and 5,000 ILS.",
+    "targetPlaceholder": "Enter target limit",
+    "saved": "Saved!",
+    "goalLine": "Goal: {{limit}} ({{percent}}% funded)",
+    "roundupHistory": "Round-up Transaction History",
+    "roundupsApplied": "Round-ups Applied",
+    "applyRoundups": "Apply Round-ups (+{{amount}} ILS)",
+    "simulatedTransactions": "Simulated Transactions",
+    "customAmountPlaceholder": "Enter custom amount",
+    "noTransactions": "No simulated transactions yet.",
+    "backSafeZone": "Back to Safe Zone",
+    "notes": {
+      "emergencyTransfer": "Emergency micro-transfer",
+      "dailyRoundups": "Daily purchase round-ups",
+      "manualDeposit": "Manual deposit",
+      "manualExpense": "Manual expense"
+    },
+    "mockPurchases": {
+      "busTicket": "Bus Ticket",
+      "groceries": "Groceries",
+      "pharmacy": "Pharmacy",
+      "coffee": "Coffee"
+    }
+  },
+  "explore": {
+    "title": "Explore",
+    "description": "This app includes example code to help you get started.",
+    "routingTitle": "File-based routing",
+    "routingLine1": "This app has two screens:",
+    "routingLine2": "The layout file in",
+    "routingLine3": "sets up the tab navigator.",
+    "learnMore": "Learn more",
+    "platformTitle": "Android, iOS, and web support",
+    "platformDescription": "You can open this project on Android, iOS, and the web. To open the web version, press",
+    "imagesTitle": "Images",
+    "imagesDescription": "For static images, you can use the",
+    "imagesDescriptionTail": "suffixes to provide files for different screen densities",
+    "themeTitle": "Light and dark mode components",
+    "themeDescription": "This template has light and dark mode support. The",
+    "themeDescriptionTail": "hook lets you inspect what the user's current color scheme is, and so you can adjust UI colors accordingly.",
+    "animationsTitle": "Animations",
+    "animationsDescription": "This template includes an example of an animated component. The",
+    "animationsDescriptionTail": "component uses the powerful",
+    "animationsDescriptionEnd": "library to create a waving hand animation.",
+    "iosParallaxDescription": "The",
+    "iosParallaxDescriptionTail": "component provides a parallax effect for the header image."
+  }
+}
