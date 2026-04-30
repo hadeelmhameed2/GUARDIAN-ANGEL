@@ -36,7 +36,13 @@ A minimalist, English-interfaced directory providing access to critical Hebrew-l
 * **Minimalist Dashboard:** Emergency triggers (Police, 118) are icon-based only, removing identifying text for enhanced stealth.
 * **Dual-Action Header:** Features a "Back to App" navigation and an "Emergency Exit" panic button.
 ---
-
+### Serverless Backend (Cloudflare Ecosystem)
+To ensure maximum security and scalability, the app utilizes a full serverless architecture:
+* **Cloudflare Workers:** Serverless functions handling the API bridge between the app and the storage layers.
+* **Cloudflare D1 (SQL Database):** A relational database used to store encrypted user credentials, personal calculator codes, and journal entries.
+* **Cloudflare R2 (Object Storage):** S3-compatible storage for securely hosting images uploaded by users, ensuring no sensitive media is stored on the physical device.
+* **Security:** Implements **Hashing** for passwords and utilizes **Wrangler** for secure environment binding.
+  
 ## 🛠 Tech Stack
 
 * **Framework:** React Native with Expo (Managed Workflow).
