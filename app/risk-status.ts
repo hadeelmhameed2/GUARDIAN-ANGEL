@@ -260,7 +260,14 @@ export async function hydrateSecureData() {
 }
 
 export async function unlockSecureDataWithPin(pin: string) {
-  if (pin !== '1234') return false;
+  let expectedPin = '1234';
+  if (typeof window !== 'undefined') {
+    const stored = window.localStorage.getItem('ga_calculator_code');
+    if (stored) {
+      expectedPin = stored;
+    }
+  }
+  if (pin !== expectedPin) return false;
   isSecureSessionUnlocked = true;
   await hydrateSecureData();
   return true;

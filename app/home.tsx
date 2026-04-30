@@ -361,6 +361,7 @@ export default function HomeScreen() {
     }
   };
 
+
   const triggerEmergencyIntervention = async () => {
     if (isTriggeringEmergency) return;
     setIsTriggeringEmergency(true);

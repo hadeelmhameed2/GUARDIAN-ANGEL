@@ -1,0 +1,13 @@
+name = "guardianangelapp"
+compatibility_date = "2026-04-30"
+pages_build_output_dir = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "guardianangel-db"
+database_id = "582a5df1-6725-46bd-b378-61190f47f242"
+
+# Re-enable this block after R2 is enabled in Cloudflare Dashboard.
+# [[r2_buckets]]
+# binding = "JOURNAL_IMAGES"
+# bucket_name = "guardianangel-journal-images"

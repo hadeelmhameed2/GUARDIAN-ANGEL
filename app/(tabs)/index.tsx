@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { unlockSecureDataWithPin } from '../risk-status';
 
 const BUTTONS: Array<Array<string>> = [
@@ -68,6 +68,68 @@ export default function CalculatorMaskScreen() {
   const router = useRouter();
   const [expression, setExpression] = useState('');
   const [display, setDisplay] = useState('0');
+  const [showAuthPanel, setShowAuthPanel] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const TOKEN_KEY = 'ga_auth_token';
+  const CODE_KEY = 'ga_calculator_code';
+
+  const getStoredToken = () => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(TOKEN_KEY);
+  };
+
+  const getStoredCalculatorCode = () => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(CODE_KEY);
+  };
+
+  const saveSession = (token: string, calculatorCode: string) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(TOKEN_KEY, token);
+    window.localStorage.setItem(CODE_KEY, calculatorCode);
+  };
+
+  const submitAuth = async (mode: 'login' | 'register') => {
+    const nextUsername = username.trim();
+    const nextPassword = password.trim();
+    if (!nextUsername || !nextPassword) {
+      Alert.alert('Missing fields', 'Please enter Username and Password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/auth/${mode}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username: nextUsername, password: nextPassword }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        Alert.alert(mode === 'register' ? 'Registration failed' : 'Login failed', payload?.error ?? 'Request failed.');
+        return;
+      }
+
+      const token = String(payload?.token ?? '');
+      if (!token) {
+        Alert.alert('Error', 'Token not returned from server.');
+        return;
+      }
+
+      saveSession(token, nextPassword);
+      const unlocked = await unlockSecureDataWithPin(nextPassword);
+      if (unlocked) {
+        router.replace('/home');
+      }
+    } catch {
+      Alert.alert('Network error', 'Could not connect to server.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const onPressKey = (key: string) => {
     if (key === 'AC') {
@@ -78,7 +140,17 @@ export default function CalculatorMaskScreen() {
 
     if (key === '=') {
       if (!expression) return;
-      if (expression === '1234') {
+      const hasToken = Boolean(getStoredToken());
+      const personalCode = getStoredCalculatorCode();
+
+      if (!hasToken && expression === '1234') {
+        setShowAuthPanel(true);
+        setExpression('');
+        setDisplay('0');
+        return;
+      }
+
+      if (hasToken && personalCode && expression === personalCode) {
         void (async () => {
           const unlocked = await unlockSecureDataWithPin(expression);
           if (unlocked) {
@@ -159,6 +231,36 @@ export default function CalculatorMaskScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {showAuthPanel ? (
+        <View style={styles.authCard}>
+          <Text style={styles.authTitle}>Username</Text>
+          <TextInput
+            style={styles.authInput}
+            placeholder="Username"
+            placeholderTextColor="#9ca3af"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+          <Text style={[styles.authTitle, { marginTop: 8 }]}>Password</Text>
+          <TextInput
+            style={styles.authInput}
+            placeholder="Password"
+            placeholderTextColor="#9ca3af"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <View style={styles.authButtonsRow}>
+            <TouchableOpacity style={styles.authButton} onPress={() => void submitAuth('login')}>
+              <Text style={styles.authButtonText}>{isSubmitting ? 'Please wait...' : 'Login'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.authButton} onPress={() => void submitAuth('register')}>
+              <Text style={styles.authButtonText}>{isSubmitting ? 'Please wait...' : 'Register'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
       <View style={styles.displayWrap}>
         <Text style={styles.display}>{display}</Text>
       </View>
@@ -196,6 +298,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  authCard: {
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderRadius: 16,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  authTitle: {
+    color: '#e5e7eb',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  authInput: {
+    marginTop: 6,
+    backgroundColor: '#1f2937',
+    borderColor: '#4b5563',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#fff',
+    fontSize: 14,
+  },
+  authButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  authButton: {
+    flex: 1,
+    backgroundColor: '#ff9f0a',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  authButtonText: {
+    color: '#111827',
+    fontWeight: '700',
+    fontSize: 13,
   },
   displayWrap: {
     flex: 1,

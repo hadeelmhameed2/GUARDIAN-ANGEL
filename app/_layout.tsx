@@ -1,11 +1,12 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
+import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import '@/src/i18n';
+
 
 export const unstable_settings = {
   anchor: '(tabs)',
