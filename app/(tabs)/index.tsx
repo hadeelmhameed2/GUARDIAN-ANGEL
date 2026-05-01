@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -15,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
+import { apiFetch } from '@/src/api';
+import { readSecureItem, writeSecureItem } from '@/src/secure-storage';
 
 const BUTTONS: Array<Array<string>> = [
   ['AC', '+/-', '%', '/'],
@@ -87,24 +89,30 @@ export default function CalculatorMaskScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [storedToken, setStoredToken] = useState<string | null>(null);
+  const [storedCalculatorCode, setStoredCalculatorCode] = useState<string | null>(null);
 
   const TOKEN_KEY = 'ga_auth_token';
   const CODE_KEY = 'ga_calculator_code';
 
-  const getStoredToken = () => {
-    if (typeof window === 'undefined') return null;
-    return window.localStorage.getItem(TOKEN_KEY);
-  };
+  useEffect(() => {
+    void (async () => {
+      const [token, code] = await Promise.all([
+        readSecureItem(TOKEN_KEY),
+        readSecureItem(CODE_KEY),
+      ]);
+      setStoredToken(token);
+      setStoredCalculatorCode(code);
+    })();
+  }, []);
 
-  const getStoredCalculatorCode = () => {
-    if (typeof window === 'undefined') return null;
-    return window.localStorage.getItem(CODE_KEY);
-  };
-
-  const saveSession = (token: string, calculatorCode: string) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(TOKEN_KEY, token);
-    window.localStorage.setItem(CODE_KEY, calculatorCode);
+  const saveSession = async (token: string, calculatorCode: string) => {
+    await Promise.all([
+      writeSecureItem(TOKEN_KEY, token),
+      writeSecureItem(CODE_KEY, calculatorCode),
+    ]);
+    setStoredToken(token);
+    setStoredCalculatorCode(calculatorCode);
   };
 
   const submitAuth = async (mode: 'login' | 'register') => {
@@ -117,7 +125,7 @@ export default function CalculatorMaskScreen() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/auth/${mode}`, {
+      const response = await apiFetch(`/api/auth/${mode}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ username: nextUsername, password: nextPassword }),
@@ -134,7 +142,7 @@ export default function CalculatorMaskScreen() {
         return;
       }
 
-      saveSession(token, nextPassword);
+      await saveSession(token, nextPassword);
       const unlocked = await unlockSecureDataWithPin(nextPassword);
       if (unlocked) {
         router.replace('/home');
@@ -155,8 +163,8 @@ export default function CalculatorMaskScreen() {
 
     if (key === '=') {
       if (!expression) return;
-      const hasToken = Boolean(getStoredToken());
-      const personalCode = getStoredCalculatorCode();
+      const hasToken = Boolean(storedToken);
+      const personalCode = storedCalculatorCode;
 
       if (!hasToken && expression === '1234') {
         setShowAuthPanel(true);

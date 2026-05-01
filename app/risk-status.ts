@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { readSecureItem } from '@/src/secure-storage';
 export type RiskState = 'green' | 'yellow' | 'red';
 
 export type ExitFundTransaction = {
@@ -260,13 +261,8 @@ export async function hydrateSecureData() {
 }
 
 export async function unlockSecureDataWithPin(pin: string) {
-  let expectedPin = '1234';
-  if (typeof window !== 'undefined') {
-    const stored = window.localStorage.getItem('ga_calculator_code');
-    if (stored) {
-      expectedPin = stored;
-    }
-  }
+  const stored = await readSecureItem('ga_calculator_code');
+  const expectedPin = stored ?? '1234';
   if (pin !== expectedPin) return false;
   isSecureSessionUnlocked = true;
   await hydrateSecureData();
@@ -279,9 +275,10 @@ export function awaitSessionReady(): Promise<void> {
   if (sessionReadyPromise) return sessionReadyPromise;
   sessionReadyPromise = (async () => {
     if (isSecureSessionUnlocked) return;
-    if (typeof window === 'undefined') return;
-    const token = window.localStorage.getItem('ga_auth_token');
-    const code = window.localStorage.getItem('ga_calculator_code');
+    const [token, code] = await Promise.all([
+      readSecureItem('ga_auth_token'),
+      readSecureItem('ga_calculator_code'),
+    ]);
     if (!token || !code) return;
     isSecureSessionUnlocked = true;
     await hydrateSecureData();
@@ -289,6 +286,4 @@ export function awaitSessionReady(): Promise<void> {
   return sessionReadyPromise;
 }
 
-if (typeof window !== 'undefined') {
-  void awaitSessionReady();
-}
+void awaitSessionReady();
