@@ -38,6 +38,11 @@ import {
   Palette,
   Shadow,
 } from '@/constants/theme';
+import {
+  buildEvidenceHtml,
+  chainHashes,
+  type EvidenceJournalEntry,
+} from '@/src/evidence';
 
 const HEADER_GRADIENTS = HeaderGradient;
 const PAGE_GRADIENTS = PageGradient;
@@ -89,14 +94,22 @@ const ACTION_GRID_BG: Record<RiskState, string> = {
   green: '#F0F4E8',
 };
 
-type EvidenceJournalEntry = {
-  id: string;
-  description: string;
-  timestamp: string;
-  imageBase64?: string;
-};
-
 const EVIDENCE_JOURNAL_STORAGE_KEY = 'guardian_angel_evidence_journal_v1';
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function formatRecordingDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -118,9 +131,18 @@ export default function HomeScreen() {
   const [incidentDescription, setIncidentDescription] = useState('');
   const [selectedJournalImage, setSelectedJournalImage] = useState<string | null>(null);
   const [selectedJournalImageName, setSelectedJournalImageName] = useState('');
+  const [selectedJournalAudio, setSelectedJournalAudio] = useState<string | null>(null);
+  const [selectedJournalAudioDuration, setSelectedJournalAudioDuration] = useState(0);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isExportingEvidence, setIsExportingEvidence] = useState(false);
   const [journalEntries, setJournalEntries] = useState<EvidenceJournalEntry[]>([]);
   const [journalViewerImage, setJournalViewerImage] = useState<string | null>(null);
   const fileInputRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<any>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUnlocked = hasSecureSessionAccess();
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -150,7 +172,26 @@ export default function HomeScreen() {
         }
         try {
           const parsed = JSON.parse(raw) as EvidenceJournalEntry[];
-          setJournalEntries(Array.isArray(parsed) ? parsed : []);
+          if (!Array.isArray(parsed)) {
+            setJournalEntries([]);
+            return;
+          }
+          void (async () => {
+            const chained = await chainHashes(parsed);
+            const needsRewrite = chained.some(
+              (entry, idx) =>
+                entry.entryHash !== parsed[idx]?.entryHash ||
+                entry.previousEntryHash !== parsed[idx]?.previousEntryHash,
+            );
+            if (needsRewrite) {
+              try {
+                window.localStorage.setItem(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
+              } catch {
+                // ignore — display chained values regardless
+              }
+            }
+            setJournalEntries(chained);
+          })();
         } catch {
           setJournalEntries([]);
         }
@@ -245,37 +286,155 @@ export default function HomeScreen() {
     }
   };
 
-  const saveJournalEntry = () => {
+  const saveJournalEntry = async () => {
     const description = incidentDescription.trim();
-    if (!description && !selectedJournalImage) {
-      Alert.alert('Missing content', 'Add a description or image before saving.');
+    if (!description && !selectedJournalImage && !selectedJournalAudio) {
+      Alert.alert('Missing content', 'Add a description, image, or audio recording before saving.');
       return;
     }
 
-    const nextEntry: EvidenceJournalEntry = {
+    const baseEntry: EvidenceJournalEntry = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       description,
       timestamp: formatTimestamp(new Date()),
       imageBase64: selectedJournalImage ?? undefined,
+      audioBase64: selectedJournalAudio ?? undefined,
+      audioDurationSec: selectedJournalAudio ? selectedJournalAudioDuration : undefined,
     };
 
-    const nextEntries = [nextEntry, ...journalEntries];
-    const persisted = persistJournalEntries(nextEntries);
+    const draft = [baseEntry, ...journalEntries];
+    const chained = await chainHashes(draft);
+    const persisted = persistJournalEntries(chained);
     if (!persisted) return;
-    setJournalEntries(nextEntries);
+    setJournalEntries(chained);
     setIncidentDescription('');
     setSelectedJournalImage(null);
     setSelectedJournalImageName('');
+    setSelectedJournalAudio(null);
+    setSelectedJournalAudioDuration(0);
     if (Platform.OS === 'web' && fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const deleteJournalEntry = (id: string) => {
-    const nextEntries = journalEntries.filter((entry) => entry.id !== id);
-    const persisted = persistJournalEntries(nextEntries);
+  const deleteJournalEntry = async (id: string) => {
+    const filtered = journalEntries.filter((entry) => entry.id !== id);
+    const rechained = await chainHashes(filtered);
+    const persisted = persistJournalEntries(rechained);
     if (!persisted) return;
-    setJournalEntries(nextEntries);
+    setJournalEntries(rechained);
+  };
+
+  const startAudioRecording = async () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      Alert.alert('Web only', 'Voice recording is currently available on the web.');
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === 'undefined') {
+      Alert.alert('Unsupported', 'Microphone recording is unavailable in this browser.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+      audioChunksRef.current = [];
+      const RecorderCtor = (window as any).MediaRecorder;
+      const recorder = new RecorderCtor(stream);
+      recorder.ondataavailable = (event: any) => {
+        if (event.data?.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || 'audio/webm',
+        });
+        try {
+          const dataUrl = await blobToDataUrl(blob);
+          setSelectedJournalAudio(dataUrl);
+        } catch {
+          Alert.alert('Recording error', 'Could not save the audio recording.');
+        }
+        if (audioStreamRef.current) {
+          audioStreamRef.current.getTracks().forEach((track) => track.stop());
+          audioStreamRef.current = null;
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecordingAudio(true);
+      setRecordingSeconds(0);
+      setSelectedJournalAudioDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          const next = prev + 1;
+          setSelectedJournalAudioDuration(next);
+          return next;
+        });
+      }, 1000);
+    } catch {
+      Alert.alert('Microphone unavailable', 'Allow microphone access to record audio.');
+    }
+  };
+
+  const stopAudioRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === 'recording') {
+      recorder.stop();
+    }
+    setIsRecordingAudio(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const clearSelectedAudio = () => {
+    setSelectedJournalAudio(null);
+    setSelectedJournalAudioDuration(0);
+    setRecordingSeconds(0);
+  };
+
+  const exportEvidencePdf = async () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      Alert.alert('Web only', 'Evidence export is currently available on the web.');
+      return;
+    }
+    if (journalEntries.length === 0) {
+      Alert.alert('Empty journal', 'Add at least one entry before exporting.');
+      return;
+    }
+    setIsExportingEvidence(true);
+    try {
+      const chained = await chainHashes(journalEntries);
+      try {
+        window.localStorage.setItem(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
+      } catch {
+        // ignore storage write failure; we can still export
+      }
+      setJournalEntries(chained);
+      const html = buildEvidenceHtml(chained, new Date().toISOString());
+      const win = window.open('', '_blank');
+      if (!win) {
+        Alert.alert('Pop-up blocked', 'Allow pop-ups for this site to export evidence.');
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        try {
+          win.print();
+        } catch {
+          // user can still print manually from the new tab
+        }
+      }, 700);
+    } catch {
+      Alert.alert('Export failed', 'Unable to generate the evidence export. Please try again.');
+    } finally {
+      setIsExportingEvidence(false);
+    }
   };
 
   const clearAllJournalEntries = () => {
@@ -593,18 +752,29 @@ export default function HomeScreen() {
           <View style={styles.journalPage}>
             <View style={styles.journalPageHeader}>
               <TouchableOpacity style={styles.backButton} onPress={() => setShowJournalModal(false)}>
-                <Text style={styles.headerIconText}>←</Text>
+                <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
               </TouchableOpacity>
               <Text style={styles.journalPageTitle}>Journal</Text>
-              <View style={styles.journalPageHeaderSpacer} />
+              <TouchableOpacity
+                style={[styles.journalExportButton, isExportingEvidence && styles.journalExportButtonDisabled]}
+                onPress={() => void exportEvidencePdf()}
+                disabled={isExportingEvidence}
+                accessibilityLabel="Export evidence PDF">
+                <Feather name="file-text" size={14} color="#FFFFFF" />
+                <Text style={styles.journalExportButtonText}>
+                  {isExportingEvidence ? 'Exporting…' : 'Export'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.journalSubtitle}>Privately record incidents with date, time, and photo evidence.</Text>
+            <Text style={styles.journalSubtitle}>
+              Privately record incidents with date, time, photos, and voice notes. Each entry is hash-chained so any later edit invalidates the chain.
+            </Text>
             <TextInput
               style={styles.journalTextarea}
               value={incidentDescription}
               onChangeText={setIncidentDescription}
               placeholder="Describe what happened..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
               multiline
               textAlignVertical="top"
             />
@@ -617,16 +787,31 @@ export default function HomeScreen() {
                   style: { display: 'none' },
                 })
               : null}
-            <View style={styles.journalFormFooter}>
-              <TouchableOpacity style={styles.journalImageButton} onPress={openImagePicker}>
-                <Text style={styles.journalImageButtonText}>📷 + Add Image</Text>
+            <View style={styles.journalAttachRow}>
+              <TouchableOpacity style={styles.journalAttachButton} onPress={openImagePicker}>
+                <Feather name="image" size={15} color={Palette.primaryDeep} />
+                <Text style={styles.journalAttachButtonText}>Add image</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.journalSaveButton} onPress={saveJournalEntry}>
-                <Text style={styles.journalSaveButtonText}>Save Entry</Text>
+              <TouchableOpacity
+                style={[styles.journalAttachButton, isRecordingAudio && styles.journalAttachButtonRecording]}
+                onPress={() => (isRecordingAudio ? stopAudioRecording() : void startAudioRecording())}>
+                <Feather
+                  name={isRecordingAudio ? 'square' : 'mic'}
+                  size={15}
+                  color={isRecordingAudio ? '#FFFFFF' : Palette.primaryDeep}
+                />
+                <Text
+                  style={[
+                    styles.journalAttachButtonText,
+                    isRecordingAudio && styles.journalAttachButtonTextRecording,
+                  ]}>
+                  {isRecordingAudio ? `Stop · ${formatRecordingDuration(recordingSeconds)}` : 'Record audio'}
+                </Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.journalClearAllButton} onPress={clearAllJournalEntries}>
-              <Text style={styles.journalClearAllButtonText}>Clear All Entries</Text>
+            <TouchableOpacity style={styles.journalSaveButton} onPress={() => void saveJournalEntry()}>
+              <Feather name="check" size={15} color="#FFFFFF" />
+              <Text style={styles.journalSaveButtonText}>Save entry</Text>
             </TouchableOpacity>
             {selectedJournalImage ? (
               <View style={styles.journalSelectedImageRow}>
@@ -634,8 +819,44 @@ export default function HomeScreen() {
                 <Text style={styles.journalSelectedImageLabel} numberOfLines={1}>
                   {selectedJournalImageName || 'Selected image'}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedJournalImage(null);
+                    setSelectedJournalImageName('');
+                    if (Platform.OS === 'web' && fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}>
+                  <Feather name="x" size={16} color={Palette.inkMuted} />
+                </TouchableOpacity>
               </View>
             ) : null}
+            {selectedJournalAudio ? (
+              <View style={styles.journalSelectedAudioRow}>
+                <View style={styles.journalSelectedAudioIcon}>
+                  <Feather name="mic" size={14} color={Palette.primaryDeep} />
+                </View>
+                <View style={styles.journalSelectedAudioBody}>
+                  {Platform.OS === 'web'
+                    ? React.createElement('audio', {
+                        controls: true,
+                        src: selectedJournalAudio,
+                        style: { width: '100%' },
+                      })
+                    : (
+                      <Text style={styles.journalSelectedImageLabel}>
+                        Recording · {formatRecordingDuration(selectedJournalAudioDuration)}
+                      </Text>
+                    )}
+                </View>
+                <TouchableOpacity onPress={clearSelectedAudio}>
+                  <Feather name="x" size={16} color={Palette.inkMuted} />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            <TouchableOpacity style={styles.journalClearAllButton} onPress={clearAllJournalEntries}>
+              <Text style={styles.journalClearAllButtonText}>Clear All Entries</Text>
+            </TouchableOpacity>
 
             <View style={styles.journalFeed}>
               {journalEntries.map((entry) => (
@@ -647,7 +868,28 @@ export default function HomeScreen() {
                       <Image source={{ uri: entry.imageBase64 }} style={styles.journalThumb} />
                     </TouchableOpacity>
                   ) : null}
-                  <TouchableOpacity style={styles.journalDeleteButton} onPress={() => deleteJournalEntry(entry.id)}>
+                  {entry.audioBase64 && Platform.OS === 'web'
+                    ? React.createElement('audio', {
+                        controls: true,
+                        src: entry.audioBase64,
+                        style: { width: '100%', marginTop: 8 },
+                      })
+                    : entry.audioBase64
+                      ? (
+                        <Text style={styles.journalEntryAudioFallback}>
+                          🎤 Audio recording attached ({entry.audioDurationSec ?? 0}s)
+                        </Text>
+                      )
+                      : null}
+                  {entry.entryHash ? (
+                    <View style={styles.journalEntryHashRow}>
+                      <Feather name="link" size={10} color={Palette.inkFaint} />
+                      <Text style={styles.journalEntryHash} numberOfLines={1}>
+                        {entry.entryHash.slice(0, 16)}…
+                      </Text>
+                    </View>
+                  ) : null}
+                  <TouchableOpacity style={styles.journalDeleteButton} onPress={() => void deleteJournalEntry(entry.id)}>
                     <Text style={styles.journalDeleteButtonText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
@@ -1627,6 +1869,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  journalAttachRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  journalAttachButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Palette.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    backgroundColor: Palette.surfaceTinted,
+  },
+  journalAttachButtonRecording: {
+    backgroundColor: Palette.primary,
+    borderColor: Palette.primaryDeep,
+  },
+  journalAttachButtonText: {
+    color: Palette.primaryDeep,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  journalAttachButtonTextRecording: {
+    color: '#FFFFFF',
+  },
   journalImageButton: {
     flex: 1,
     borderWidth: 1,
@@ -1642,17 +1913,81 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   journalSaveButton: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    backgroundColor: Palette.primary,
+    marginTop: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 999,
+    paddingVertical: 14,
+    backgroundColor: Palette.primary,
+    ...Shadow.soft,
   },
   journalSaveButtonText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  journalExportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: Palette.primary,
+    ...Shadow.soft,
+  },
+  journalExportButtonDisabled: {
+    opacity: 0.6,
+  },
+  journalExportButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  journalSelectedAudioRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Palette.surfaceTinted,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  journalSelectedAudioIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Palette.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  journalSelectedAudioBody: {
+    flex: 1,
+  },
+  journalEntryAudioFallback: {
+    marginTop: 8,
+    color: Palette.inkMuted,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  journalEntryHashRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  journalEntryHash: {
+    color: Palette.inkFaint,
+    fontSize: 10,
+    fontFamily: Fonts.mono,
+    letterSpacing: 0.4,
   },
   journalClearAllButton: {
     marginTop: 10,
