@@ -30,7 +30,7 @@ const TRUSTED_CONTACTS_KEY = 'trusted_contacts';
 
 let currentStatus: RiskState = 'yellow';
 let isSecureSessionUnlocked = false;
-let exitFundBalance = 1240.8;
+let exitFundBalance = 0;
 let mainAccountBalance = 12500;
 let userDefinedLimit = 3000;
 let exitFundTransactions: ExitFundTransaction[] = [];
@@ -158,10 +158,10 @@ export async function setExitFundData(next: ExitFundSnapshot) {
 }
 
 export async function setUserDefinedLimit(nextLimit: number) {
-  const clamped = Math.min(5000, Math.max(500, Math.round(nextLimit)));
-  userDefinedLimit = clamped;
+  const sanitized = Math.max(0, Math.round(nextLimit));
+  userDefinedLimit = sanitized;
   if (isSecureSessionUnlocked) {
-    await safeSetItem(USER_DEFINED_LIMIT_KEY, String(clamped));
+    await safeSetItem(USER_DEFINED_LIMIT_KEY, String(sanitized));
   }
 }
 
@@ -217,7 +217,7 @@ export async function hydrateSecureData() {
   if (limitStored) {
     const parsedLimit = Number(limitStored);
     if (Number.isFinite(parsedLimit)) {
-      userDefinedLimit = Math.min(5000, Math.max(500, Math.round(parsedLimit)));
+      userDefinedLimit = Math.max(0, Math.round(parsedLimit));
     }
   }
 
@@ -271,4 +271,24 @@ export async function unlockSecureDataWithPin(pin: string) {
   isSecureSessionUnlocked = true;
   await hydrateSecureData();
   return true;
+}
+
+let sessionReadyPromise: Promise<void> | null = null;
+
+export function awaitSessionReady(): Promise<void> {
+  if (sessionReadyPromise) return sessionReadyPromise;
+  sessionReadyPromise = (async () => {
+    if (isSecureSessionUnlocked) return;
+    if (typeof window === 'undefined') return;
+    const token = window.localStorage.getItem('ga_auth_token');
+    const code = window.localStorage.getItem('ga_calculator_code');
+    if (!token || !code) return;
+    isSecureSessionUnlocked = true;
+    await hydrateSecureData();
+  })();
+  return sessionReadyPromise;
+}
+
+if (typeof window !== 'undefined') {
+  void awaitSessionReady();
 }

@@ -1,7 +1,20 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { unlockSecureDataWithPin } from '../risk-status';
+import { Fonts, Palette, Shadow } from '@/constants/theme';
 
 const BUTTONS: Array<Array<string>> = [
   ['AC', '+/-', '%', '/'],
@@ -69,6 +82,8 @@ export default function CalculatorMaskScreen() {
   const [expression, setExpression] = useState('');
   const [display, setDisplay] = useState('0');
   const [showAuthPanel, setShowAuthPanel] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -229,38 +244,111 @@ export default function CalculatorMaskScreen() {
     }
   };
 
+  const submitLabel = isSubmitting ? 'Please wait...' : authMode === 'login' ? 'Log in' : 'Sign up';
+
   return (
     <SafeAreaView style={styles.container}>
-      {showAuthPanel ? (
-        <View style={styles.authCard}>
-          <Text style={styles.authTitle}>Username</Text>
-          <TextInput
-            style={styles.authInput}
-            placeholder="Username"
-            placeholderTextColor="#9ca3af"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-          <Text style={[styles.authTitle, { marginTop: 8 }]}>Password</Text>
-          <TextInput
-            style={styles.authInput}
-            placeholder="Password"
-            placeholderTextColor="#9ca3af"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <View style={styles.authButtonsRow}>
-            <TouchableOpacity style={styles.authButton} onPress={() => void submitAuth('login')}>
-              <Text style={styles.authButtonText}>{isSubmitting ? 'Please wait...' : 'Login'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.authButton} onPress={() => void submitAuth('register')}>
-              <Text style={styles.authButtonText}>{isSubmitting ? 'Please wait...' : 'Register'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : null}
+      <Modal
+        visible={showAuthPanel}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowAuthPanel(false)}>
+        <LinearGradient
+          colors={['#FBF1EC', '#FAE1D8', '#FBF1EC']}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={styles.authGradient}>
+          <SafeAreaView style={styles.authSafe}>
+            <View style={styles.authTopBar}>
+              <TouchableOpacity
+                style={styles.authCloseButton}
+                onPress={() => setShowAuthPanel(false)}
+                accessibilityLabel="Close">
+                <Feather name="x" size={20} color={Palette.inkSoft} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.authScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              <View style={styles.authBrandWrap}>
+                <View style={styles.authBrandIcon}>
+                  <Feather name="heart" size={28} color={Palette.primary} />
+                </View>
+                <Text style={styles.authBrandTitle}>Guardian</Text>
+                <Text style={styles.authBrandSubtitle}>Your safe, private space.</Text>
+              </View>
+
+              <View style={styles.authForm}>
+                <View style={styles.authFieldWrap}>
+                  <Feather name="user" size={16} color={Palette.inkMuted} style={styles.authFieldIcon} />
+                  <TextInput
+                    style={styles.authField}
+                    placeholder="Username"
+                    placeholderTextColor={Palette.inkFaint}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.authFieldWrap}>
+                  <Feather name="lock" size={16} color={Palette.inkMuted} style={styles.authFieldIcon} />
+                  <TextInput
+                    style={styles.authField}
+                    placeholder="Password"
+                    placeholderTextColor={Palette.inkFaint}
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                    style={styles.authEyeButton}>
+                    <Feather
+                      name={showPassword ? 'eye-off' : 'eye'}
+                      size={18}
+                      color={Palette.inkMuted}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.authPrimaryButton, isSubmitting && styles.authPrimaryButtonDisabled]}
+                  onPress={() => void submitAuth(authMode)}
+                  disabled={isSubmitting}>
+                  <Text style={styles.authPrimaryButtonText}>{submitLabel}</Text>
+                </TouchableOpacity>
+
+                <View style={styles.authDivider}>
+                  <View style={styles.authDividerLine} />
+                  <Text style={styles.authDividerText}>OR</Text>
+                  <View style={styles.authDividerLine} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.authToggleButton}
+                  onPress={() => setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))}>
+                  <Text style={styles.authToggleText}>
+                    {authMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                    <Text style={styles.authToggleAccent}>
+                      {authMode === 'login' ? 'Sign up' : 'Log in'}
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+
+            <View style={styles.authFooter}>
+              <Text style={styles.authFooterText}>Guardian Angel</Text>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </Modal>
+
       <View style={styles.displayWrap}>
         <Text style={styles.display}>{display}</Text>
       </View>
@@ -299,47 +387,149 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  authCard: {
-    backgroundColor: '#111827',
+  authGradient: {
+    flex: 1,
+  },
+  authSafe: {
+    flex: 1,
+  },
+  authTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  authCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 16,
-    padding: 12,
+    borderColor: Palette.border,
+  },
+  authScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  authBrandWrap: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  authBrandIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 26,
+    backgroundColor: '#FFFCF9',
+    borderWidth: 1,
+    borderColor: Palette.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    ...Shadow.lift,
+  },
+  authBrandTitle: {
+    fontSize: 38,
+    fontFamily: Fonts.serif,
+    fontStyle: 'italic',
+    fontWeight: '500',
+    color: Palette.ink,
+    letterSpacing: -0.4,
+  },
+  authBrandSubtitle: {
     marginTop: 8,
+    fontSize: 13,
+    color: Palette.inkMuted,
+    letterSpacing: 0.4,
+  },
+  authForm: {
+    width: '100%',
+    maxWidth: 380,
+    alignSelf: 'center',
+  },
+  authFieldWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
+    borderColor: Palette.border,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     marginBottom: 12,
   },
-  authTitle: {
-    color: '#e5e7eb',
-    fontSize: 13,
-    fontWeight: '600',
+  authFieldIcon: {
+    marginRight: 12,
   },
-  authInput: {
-    marginTop: 6,
-    backgroundColor: '#1f2937',
-    borderColor: '#4b5563',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: '#fff',
-    fontSize: 14,
-  },
-  authButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  authButton: {
+  authField: {
     flex: 1,
-    backgroundColor: '#ff9f0a',
-    borderRadius: 10,
-    paddingVertical: 10,
+    paddingVertical: 16,
+    color: Palette.ink,
+    fontSize: 15,
+  },
+  authEyeButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+  },
+  authPrimaryButton: {
+    marginTop: 8,
+    backgroundColor: Palette.primary,
+    borderRadius: 999,
+    paddingVertical: 17,
+    alignItems: 'center',
+    ...Shadow.soft,
+  },
+  authPrimaryButtonDisabled: {
+    opacity: 0.6,
+  },
+  authPrimaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  authDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginVertical: 28,
+  },
+  authDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Palette.borderStrong,
+  },
+  authDividerText: {
+    color: Palette.inkMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.6,
+  },
+  authToggleButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  authToggleText: {
+    color: Palette.inkMuted,
+    fontSize: 13,
+  },
+  authToggleAccent: {
+    color: Palette.primaryDeep,
+    fontWeight: '700',
+  },
+  authFooter: {
+    paddingBottom: 18,
     alignItems: 'center',
   },
-  authButtonText: {
-    color: '#111827',
-    fontWeight: '700',
-    fontSize: 13,
+  authFooterText: {
+    color: Palette.inkFaint,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    fontStyle: 'italic',
   },
   displayWrap: {
     flex: 1,

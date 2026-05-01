@@ -17,6 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 import {
   getCurrentStatus,
   addTrustedContact,
@@ -29,39 +30,34 @@ import {
 import { useShakeHide } from '../hooks/use-shake-hide';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { getPanicSettings, savePanicSettings } from '@/src/panic-settings';
+import {
+  BranchTint,
+  Fonts,
+  HeaderGradient,
+  PageGradient,
+  Palette,
+  Shadow,
+} from '@/constants/theme';
 
-const HEADER_GRADIENTS = {
-  red: ['#fdecec', '#f9dede', '#f7e8e6'],
-  yellow: ['#fff4dd', '#fdeac8', '#fef8e8'],
-  green: ['#e8f5e9', '#dff0e1', '#eef8ef'],
-} as const;
-
-const PAGE_GRADIENTS = {
-  red: ['#FFD6D6', '#FAF3E0'],
-  yellow: ['#FFE8D1', '#FAF3E0'],
-  green: ['#E8F5E9', '#FAF3E0'],
-} as const;
-const BRANCH_TINT: Record<RiskState, string> = {
-  red: '#9f4b4b',
-  yellow: '#a8692e',
-  green: '#4d6d52',
-};
+const HEADER_GRADIENTS = HeaderGradient;
+const PAGE_GRADIENTS = PageGradient;
+const BRANCH_TINT: Record<RiskState, string> = BranchTint;
 
 const STATUS_SCENARIOS = {
   red: {
-    pillBg: '#FDECEC',
+    pillBg: Palette.statusRedBg,
     pillTextKey: 'homeScreen.status.redPill',
     titleKey: 'homeScreen.status.redTitle',
     descriptionKey: 'homeScreen.status.redDescription',
   },
   yellow: {
-    pillBg: '#FEF9E7',
+    pillBg: Palette.statusYellowBg,
     pillTextKey: 'homeScreen.status.yellowPill',
     titleKey: 'homeScreen.status.yellowTitle',
     descriptionKey: 'homeScreen.status.yellowDescription',
   },
   green: {
-    pillBg: '#E8F5E9',
+    pillBg: Palette.statusGreenBg,
     pillTextKey: 'homeScreen.status.greenPill',
     titleKey: 'homeScreen.status.greenTitle',
     descriptionKey: 'homeScreen.status.greenDescription',
@@ -81,17 +77,17 @@ const SAFETY_TIPS = [
   'homeScreen.safetyTips.tip4',
 ];
 
-const ASSESSMENT_HERO_BG = {
-  red: '#FFD6D6',
-  yellow: '#FFE8D1',
-  green: '#E8F5E9',
-} as const;
+const ASSESSMENT_HERO_BG: Record<RiskState, string> = {
+  red: '#FBE5DE',
+  yellow: '#FBEAD2',
+  green: '#EFF3E7',
+};
 
-const ACTION_GRID_BG = {
-  red: '#fdeeee',
-  yellow: '#fdf3e4',
-  green: '#edf6ee',
-} as const;
+const ACTION_GRID_BG: Record<RiskState, string> = {
+  red: '#FCEEE7',
+  yellow: '#FBF1DD',
+  green: '#F0F4E8',
+};
 
 type EvidenceJournalEntry = {
   id: string;
@@ -403,9 +399,9 @@ export default function HomeScreen() {
   const buildTrafficLightStyle = (light: RiskState) => {
     const isActive = light === currentStatus;
     const colors: Record<RiskState, string> = {
-      red: '#ef4444',
-      yellow: '#f59e0b',
-      green: '#22c55e',
+      red: '#D26B7A',
+      yellow: '#D8A464',
+      green: '#7FA886',
     };
     const color = colors[light];
     return {
@@ -661,19 +657,35 @@ export default function HomeScreen() {
         ) : (
           <>
             <View style={styles.headerRow}>
-              <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Text style={styles.headerIconText}>←</Text>
+              <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityLabel="Back">
+                <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
               </TouchableOpacity>
-              <Text style={styles.title}>{t('homeScreen.safeZone')}</Text>
               <View style={styles.headerRightActions}>
                 <LanguageSwitcher />
-                <TouchableOpacity style={styles.quickExitButton} onPress={() => router.replace('/(tabs)')}>
-                  <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+                <TouchableOpacity
+                  style={styles.quickExitButton}
+                  onPress={() => router.replace('/(tabs)')}
+                  accessibilityLabel="Exit">
+                  <Feather name="x" size={18} color={Palette.inkSoft} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trafficShell}>
+            <View style={styles.welcomeBlock}>
+              <Text style={styles.welcomeEyebrow}>{t('homeScreen.safeZone')}</Text>
+              <Text style={styles.welcomeTitle}>You are{'\n'}held here.</Text>
+              <View style={styles.welcomeOrnament}>
+                <View style={styles.welcomeOrnamentLine} />
+                <Feather name="heart" size={11} color={Palette.primary} />
+                <View style={styles.welcomeOrnamentLine} />
+              </View>
+            </View>
+
+            <LinearGradient
+              colors={headerGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.statusHero}>
               <View style={styles.headerMainRow}>
                 <View style={styles.trafficHousingSoft}>
                   <View style={[styles.trafficLightSoft, buildTrafficLightStyle('red')]} />
@@ -688,68 +700,119 @@ export default function HomeScreen() {
                   <Text style={styles.statusSubMessage}>{t(headerScenario.descriptionKey)}</Text>
                 </View>
               </View>
-              <View style={styles.headerAffirmationBox}>
-                <Text style={styles.headerAffirmationIcon}>🤍</Text>
-                <Text style={styles.headerAffirmationText}>{t(heartAffirmationKey)}</Text>
+              <View style={styles.statusDivider}>
+                <View style={styles.statusDividerLine} />
+                <Text style={styles.statusDividerOrnament}>✿</Text>
+                <View style={styles.statusDividerLine} />
               </View>
+              <Text style={styles.statusAffirmation}>&ldquo;{t(heartAffirmationKey)}&rdquo;</Text>
             </LinearGradient>
 
-            <View style={styles.bottomActions}>
-              <Text style={styles.actionSubheader}>{t('homeScreen.actions.subheader')}</Text>
-              <TouchableOpacity
-                style={[styles.securityTipsButton, { backgroundColor: ACTION_GRID_BG[currentStatus] }]}
-                onPress={() => setShowSafetyTipsModal(true)}>
-                <Text style={styles.securityTipsTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
-                <Text style={styles.securityTipsDescription}>{t('homeScreen.actions.securityTipsDescription')}</Text>
-                <Text style={styles.securityTipsArrow}>&gt;</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.assessmentHeroCard, { backgroundColor: ASSESSMENT_HERO_BG[currentStatus] }]} onPress={() => router.push('/assessment')}>
-                <Text style={styles.assessmentHeroTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
-                <Text style={styles.assessmentHeroDescription}>{t('homeScreen.actions.startAssessmentDescription')}</Text>
-                <View style={styles.assessmentHeroActionRow}>
-                  <Text style={styles.assessmentHeroActionText}>{t('homeScreen.actions.startQuiz')}</Text>
-                  <Text style={styles.assessmentHeroArrow}>&gt;</Text>
-                </View>
-              </TouchableOpacity>
-              <View style={styles.actionGridRow}>
-                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowSupportModal(true)}>
-                  <Image source={require('../assets/images/image_12.png')} style={styles.actionGridIconImage} />
-                  <Text style={styles.actionGridTitle}>{t('homeScreen.support.title')}</Text>
-                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.talkToSomeoneDescription')}</Text>
-                  <Text style={styles.actionGridArrow}>&gt;</Text>
+            <View style={styles.bentoSection}>
+              <Text style={styles.sectionLabel}>{t('homeScreen.actions.subheader')}</Text>
+
+              <View style={styles.bentoRow}>
+                <TouchableOpacity
+                  style={styles.bentoCardSmall}
+                  onPress={() => setShowSafetyTipsModal(true)}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
+                    <Feather name="shield" size={20} color={Palette.statusGreenInk} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
+                  <Text style={styles.bentoCardDescription} numberOfLines={3}>
+                    {t('homeScreen.actions.securityTipsDescription')}
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/shelters')}>
-                  <Image source={require('../assets/images/image_11.png')} style={styles.actionGridIconImage} />
-                  <Text style={styles.actionGridTitle}>{t('homeScreen.actions.shelters')}</Text>
-                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.sheltersDescription')}</Text>
-                  <Text style={styles.actionGridArrow}>&gt;</Text>
+
+                <TouchableOpacity
+                  style={styles.bentoCardWide}
+                  onPress={() => router.push('/assessment')}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
+                    <Feather name="clipboard" size={20} color={Palette.primaryDeep} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
+                  <Text style={styles.bentoCardDescription} numberOfLines={3}>
+                    {t('homeScreen.actions.startAssessmentDescription')}
+                  </Text>
+                  <View style={styles.bentoCardCTA}>
+                    <Text style={styles.bentoCardCTAText}>{t('homeScreen.actions.startQuiz')}</Text>
+                    <Feather name="arrow-right" size={13} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.bentoRow}>
+                <TouchableOpacity
+                  style={styles.bentoCardEqual}
+                  onPress={() => setShowSupportModal(true)}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.surfaceTinted }]}>
+                    <Feather name="phone-call" size={20} color={Palette.primaryDeep} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>{t('homeScreen.support.title')}</Text>
+                  <Text style={styles.bentoCardDescription}>
+                    {t('homeScreen.actions.talkToSomeoneDescription')}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionGridCard, styles.emergencyActionGridCard]}
-                  onPress={() => void triggerEmergencyIntervention()}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('panic.triggerTitle')}>
-                  <Text style={styles.actionGridIconEmoji}>🚨</Text>
-                  <Text style={[styles.actionGridTitle, styles.emergencyActionGridTitle]}>{t('panic.triggerTitle')}</Text>
-                  <Text style={[styles.actionGridDescription, styles.emergencyActionGridDescription]}>
-                    {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
+                  style={styles.bentoCardEqual}
+                  onPress={() => router.push('/shelters')}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.goldSoft }]}>
+                    <Feather name="home" size={20} color={Palette.statusYellowInk} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.shelters')}</Text>
+                  <Text style={styles.bentoCardDescription}>
+                    {t('homeScreen.actions.sheltersDescription')}
                   </Text>
-                  <TouchableOpacity style={styles.panicInlineSetupButton} onPress={() => setShowPanicSettingsModal(true)}>
-                    <Text style={styles.panicInlineSetupText}>{t('panic.setup.open')}</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.actionGridArrow, styles.emergencyActionGridArrow]}>&gt;</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => router.push('/exit_fund')}>
-                  <Image source={require('../assets/images/image_13.png')} style={styles.actionGridIconImage} />
-                  <Text style={styles.actionGridTitle}>{t('homeScreen.actions.secureResources')}</Text>
-                  <Text style={styles.actionGridDescription}>{t('homeScreen.actions.secureResourcesDescription')}</Text>
-                  <Text style={styles.actionGridArrow}>&gt;</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.bentoCardEmergency}
+                onPress={() => void triggerEmergencyIntervention()}
+                accessibilityRole="button"
+                accessibilityLabel={t('panic.triggerTitle')}>
+                <View style={styles.bentoEmergencyContent}>
+                  <View style={styles.bentoEmergencyIconWrap}>
+                    <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.bentoEmergencyTextWrap}>
+                    <Text style={styles.bentoEmergencyTitle}>{t('panic.triggerTitle')}</Text>
+                    <Text style={styles.bentoEmergencyDescription}>
+                      {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
+                    </Text>
+                  </View>
+                  <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                </View>
+                <TouchableOpacity
+                  style={styles.bentoEmergencySetup}
+                  onPress={() => setShowPanicSettingsModal(true)}>
+                  <Feather name="settings" size={11} color="#FFFFFF" />
+                  <Text style={styles.bentoEmergencySetupText}>{t('panic.setup.open')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionGridCard, { backgroundColor: ACTION_GRID_BG[currentStatus] }]} onPress={() => setShowJournalModal(true)}>
-                  <Text style={styles.actionGridIconEmoji}>📓</Text>
-                  <Text style={styles.actionGridTitle}>Journal</Text>
-                  <Text style={styles.actionGridDescription}>Document incidents and keep personal evidence notes.</Text>
-                  <Text style={styles.actionGridArrow}>&gt;</Text>
+              </TouchableOpacity>
+
+              <View style={styles.bentoRow}>
+                <TouchableOpacity
+                  style={styles.bentoCardEqual}
+                  onPress={() => router.push('/exit_fund')}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
+                    <Feather name="lock" size={20} color={Palette.primaryDeep} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.secureResources')}</Text>
+                  <Text style={styles.bentoCardDescription}>
+                    {t('homeScreen.actions.secureResourcesDescription')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.bentoCardEqual}
+                  onPress={() => setShowJournalModal(true)}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
+                    <Feather name="book-open" size={20} color={Palette.statusGreenInk} />
+                  </View>
+                  <Text style={styles.bentoCardTitle}>Journal</Text>
+                  <Text style={styles.bentoCardDescription}>
+                    Document incidents and keep personal notes.
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -779,27 +842,29 @@ const styles = StyleSheet.create({
     right: -35,
     width: 420,
     height: 520,
-    opacity: 0.15,
+    opacity: 0.12,
     transform: [{ rotate: '-14deg' }],
     zIndex: 0,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 26,
+    paddingBottom: 32,
     flexGrow: 1,
   },
   title: {
     flex: 1,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#1c2b3a',
+    color: Palette.ink,
     textAlign: 'left',
+    fontFamily: Fonts.serif,
+    letterSpacing: 0.2,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 18,
     gap: 10,
   },
   headerRightActions: {
@@ -808,35 +873,37 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#dce5ee',
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   headerIconText: {
-    color: '#4a5d72',
-    fontSize: 16,
-    fontWeight: '700',
+    color: Palette.inkSoft,
+    fontSize: 18,
+    fontWeight: '500',
   },
   quickExitButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#dce5ee',
-    paddingHorizontal: 12,
+    borderColor: Palette.border,
+    paddingHorizontal: 0,
+    ...Shadow.soft,
   },
   quickExitEmoji: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2D3436',
+    color: Palette.ink,
   },
   stealthExitImage: {
     width: 18,
@@ -844,43 +911,37 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   trafficShell: {
-    marginBottom: 20,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    padding: 25,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+    marginBottom: 22,
+    borderRadius: 28,
+    padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.18)',
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   headerMainRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 18,
     alignItems: 'flex-start',
     writingDirection: 'ltr',
   },
   trafficHousingSoft: {
-    width: 74,
-    borderRadius: 24,
-    paddingVertical: 14,
-    gap: 10,
+    width: 78,
+    borderRadius: 28,
+    paddingVertical: 16,
+    gap: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(32,41,52,0.9)',
+    backgroundColor: '#2D2421',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    shadowColor: '#111827',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: 'rgba(255,255,255,0.18)',
+    shadowColor: '#2D2421',
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
   },
   trafficLightSoft: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
   },
   statusTextWrap: {
@@ -891,127 +952,125 @@ const styles = StyleSheet.create({
   statusPill: {
     borderRadius: 999,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(168, 87, 108, 0.22)',
   },
   statusPillText: {
-    color: '#2D3436',
+    color: Palette.inkSoft,
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.1,
   },
   affirmationCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFCF9',
     borderRadius: 24,
     padding: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.2)',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   affirmationLabel: {
-    color: '#6b7f95',
+    color: Palette.inkMuted,
     fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   affirmationText: {
     marginTop: 8,
-    color: '#1c2b3a',
+    color: Palette.ink,
     fontSize: 21,
     fontWeight: '700',
     lineHeight: 28,
+    fontFamily: Fonts.serif,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFCF9',
     borderRadius: 22,
     padding: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.2)',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#334155',
+    color: Palette.ink,
     marginBottom: 10,
   },
   statusMessage: {
-    marginTop: 10,
-    fontSize: 25,
-    color: '#2D3436',
+    marginTop: 12,
+    fontSize: 23,
+    color: Palette.ink,
     textAlign: 'left',
-    lineHeight: 32,
+    lineHeight: 30,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
     writingDirection: 'ltr',
   },
   statusSubMessage: {
-    marginTop: 10,
-    color: '#2D3436',
+    marginTop: 8,
+    color: Palette.inkMuted,
     fontSize: 14,
     textAlign: 'left',
-    lineHeight: 21,
+    lineHeight: 22,
     writingDirection: 'ltr',
   },
   headerAffirmationBox: {
-    marginTop: 16,
+    marginTop: 18,
     borderRadius: 20,
-    backgroundColor: '#FFF5F5',
-    padding: 15,
+    backgroundColor: '#FFFCF9',
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: Palette.primary,
     writingDirection: 'ltr',
   },
   headerAffirmationIcon: {
     fontSize: 18,
-    lineHeight: 23,
+    lineHeight: 24,
   },
   headerAffirmationText: {
     flex: 1,
-    color: '#2D3436',
+    color: Palette.inkSoft,
     fontSize: 14,
     lineHeight: 22,
+    fontStyle: 'italic',
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   greenEmpowermentCard: {
     marginTop: 14,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: Palette.border,
     alignItems: 'center',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    ...Shadow.soft,
   },
   greenIconWrap: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#14532d',
+    backgroundColor: Palette.sage,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   greenIcon: {
-    color: '#d1fae5',
+    color: Palette.sageSoft,
     fontSize: 18,
     fontWeight: '800',
   },
   greenAffirmation: {
-    color: '#334155',
+    color: Palette.ink,
     fontSize: 20,
     lineHeight: 34,
     fontWeight: '300',
@@ -1021,85 +1080,83 @@ const styles = StyleSheet.create({
   },
   greenSupportText: {
     marginTop: 12,
-    color: '#475569',
+    color: Palette.inkMuted,
     fontSize: 13,
-    lineHeight: 26,
+    lineHeight: 22,
     textAlign: 'left',
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
   },
   greenActionButton: {
     marginTop: 14,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFCF9',
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#dbe4ec',
+    borderColor: Palette.border,
   },
   greenActionButtonText: {
-    color: '#42566b',
+    color: Palette.inkSoft,
     fontSize: 13,
     fontWeight: '700',
   },
   safetyCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFCF9',
   },
   safetyCardEmergency: {
-    backgroundColor: '#7f1d1d',
+    backgroundColor: Palette.emergencyDeep,
     borderWidth: 1,
-    borderColor: '#fca5a5',
+    borderColor: Palette.primarySoft,
   },
   contactInputWrap: {
-    gap: 8,
-    marginTop: 6,
+    gap: 10,
+    marginTop: 8,
   },
   contactInput: {
     borderWidth: 1,
-    borderColor: '#d3dee8',
-    backgroundColor: '#f8fbff',
-    color: '#1f2937',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: Palette.border,
+    backgroundColor: '#FDF8F2',
+    color: Palette.ink,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
   },
   panicMessageInput: {
-    minHeight: 96,
+    minHeight: 100,
   },
   contactSaveButton: {
-    marginTop: 4,
+    marginTop: 6,
     alignSelf: 'flex-start',
-    backgroundColor: '#ecf1f7',
+    backgroundColor: Palette.primary,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   contactSaveButtonEmergency: {
-    backgroundColor: '#991b1b',
+    backgroundColor: Palette.emergencyDeep,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: Palette.primarySoft,
   },
   contactSaveButtonText: {
-    color: '#42566b',
+    color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 13,
   },
   manageRow: {
-    marginTop: 8,
+    marginTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
   removePill: {
-    backgroundColor: '#eef3f8',
-    borderWidth: 1,
-    borderColor: '#d3dee8',
+    backgroundColor: Palette.primarySoft,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   removePillText: {
-    color: '#475569',
+    color: Palette.primaryDeep,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1107,32 +1164,29 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     width: 52,
     height: 52,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   hotlineButton: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   primaryEmergencyButton: {
-    backgroundColor: '#b91c1c',
-    borderColor: '#dc2626',
+    backgroundColor: Palette.emergencyDeep,
+    borderColor: Palette.primary,
   },
   hotline118Button: {
-    backgroundColor: '#0f766e',
-    borderColor: '#14b8a6',
+    backgroundColor: Palette.sage,
+    borderColor: Palette.sageSoft,
   },
   secondaryEmergencyButton: {
-    backgroundColor: '#eef2f7',
+    backgroundColor: Palette.surface,
     borderWidth: 1,
-    borderColor: '#d3dee8',
+    borderColor: Palette.border,
   },
   disabledEmojiButton: {
     opacity: 0.35,
@@ -1150,7 +1204,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
-    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   supportEmojiRow: {
@@ -1165,10 +1218,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(136,136,136,0.15)',
+    backgroundColor: 'rgba(168,151,143,0.18)',
   },
   plusTriggerText: {
-    color: '#8a8a8a',
+    color: Palette.inkMuted,
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 14,
@@ -1177,36 +1230,35 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   actionSubheader: {
-    marginTop: 6,
-    marginBottom: 14,
-    color: '#2D3436',
-    fontSize: 21,
-    fontFamily: 'serif',
+    marginTop: 8,
+    marginBottom: 16,
+    color: Palette.ink,
+    fontSize: 22,
+    fontFamily: Fonts.serif,
+    fontWeight: '700',
     textAlign: 'left',
+    letterSpacing: 0.3,
   },
   securityTipsButton: {
     width: '100%',
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Palette.border,
     padding: 18,
     marginBottom: 14,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    ...Shadow.soft,
   },
   securityTipsTitle: {
-    color: '#2D3436',
-    fontSize: 16,
+    color: Palette.ink,
+    fontSize: 17,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   securityTipsDescription: {
     marginTop: 6,
-    color: '#6b7280',
+    color: Palette.inkMuted,
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'left',
@@ -1214,105 +1266,105 @@ const styles = StyleSheet.create({
   },
   securityTipsArrow: {
     marginTop: 8,
-    color: '#64748b',
+    color: Palette.primary,
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'left',
   },
   assessmentHeroCard: {
     width: '100%',
-    borderRadius: 25,
-    padding: 25,
-    marginBottom: 16,
-    backgroundColor: '#E8F5E9',
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#cde5d1',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   assessmentHeroTitle: {
     marginTop: 0,
-    color: '#2D3436',
-    fontSize: 24,
+    color: Palette.ink,
+    fontSize: 22,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   assessmentHeroDescription: {
     marginTop: 10,
-    color: '#3f4c4f',
+    color: Palette.inkMuted,
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   assessmentHeroActionRow: {
-    marginTop: 16,
+    marginTop: 18,
     flexDirection: 'row',
     alignSelf: 'flex-end',
     alignItems: 'center',
     gap: 8,
+    backgroundColor: Palette.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 999,
   },
   assessmentHeroActionText: {
-    color: '#2D3436',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: 0.4,
   },
   assessmentHeroArrow: {
-    color: '#2D3436',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '700',
   },
   actionGridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 12,
   },
   actionGridCard: {
     width: '48.5%',
-    minHeight: 176,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    minHeight: 184,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: Palette.border,
+    padding: 16,
+    ...Shadow.soft,
   },
   emergencyActionGridCard: {
-    backgroundColor: '#7f1d1d',
-    borderColor: '#ef4444',
-    shadowColor: '#7f1d1d',
+    backgroundColor: Palette.emergencyDeep,
+    borderColor: Palette.emergencyMid,
+    shadowColor: Palette.emergencyDeep,
     shadowOpacity: 0.22,
   },
   actionGridIconImage: {
-    width: 22,
-    height: 22,
+    width: 26,
+    height: 26,
     resizeMode: 'contain',
-    marginBottom: 8,
+    marginBottom: 10,
+    tintColor: Palette.primaryDeep,
   },
   actionGridIconEmoji: {
     fontSize: 22,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   actionGridTitle: {
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   emergencyActionGridTitle: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
   actionGridDescription: {
     marginTop: 8,
-    color: '#6b7280',
+    color: Palette.inkMuted,
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'left',
@@ -1320,152 +1372,156 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emergencyActionGridDescription: {
-    color: '#fee2e2',
+    color: Palette.emergencyOnDark,
   },
   actionGridArrow: {
-    color: '#64748b',
+    color: Palette.primary,
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'left',
   },
   emergencyActionGridArrow: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
   panicInlineSetupButton: {
     marginTop: 10,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: Palette.primarySoft,
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
   panicInlineSetupText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
   },
   supportOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(17,24,39,0.35)',
+    backgroundColor: 'rgba(61, 47, 44, 0.36)',
     justifyContent: 'center',
     padding: 24,
   },
   supportModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Palette.border,
+    ...Shadow.lift,
   },
   supportModalTitle: {
-    color: '#2D3436',
-    fontSize: 18,
+    color: Palette.ink,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 12,
+    fontFamily: Fonts.serif,
+    marginBottom: 14,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   supportActionButton: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 14,
-    backgroundColor: '#ffffff',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderColor: Palette.border,
+    borderRadius: 16,
+    backgroundColor: Palette.surfaceTinted,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     marginBottom: 10,
   },
   supportActionText: {
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   supportEmptyText: {
-    marginVertical: 4,
-    color: '#6b7280',
+    marginVertical: 6,
+    color: Palette.inkMuted,
     fontSize: 12,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   supportCloseButton: {
-    marginTop: 6,
+    marginTop: 8,
     borderRadius: 14,
     paddingVertical: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: Palette.surfaceMuted,
   },
   supportCloseText: {
     textAlign: 'center',
-    color: '#374151',
+    color: Palette.inkSoft,
     fontWeight: '700',
   },
   safetyTipsModal: {
-    backgroundColor: '#F8F4EA',
-    borderRadius: 20,
-    padding: 18,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1,
-    borderColor: '#dbe7d9',
+    borderColor: Palette.border,
+    ...Shadow.lift,
   },
   safetyTipsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   safetyTipsTitle: {
-    color: '#2D3436',
-    fontSize: 18,
+    color: Palette.ink,
+    fontSize: 20,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
     textAlign: 'left',
   },
   safetyTipRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 12,
+    backgroundColor: Palette.surfaceTinted,
+    borderRadius: 14,
+    padding: 12,
   },
   safetyTipIcon: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
   },
   safetyTipText: {
     flex: 1,
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   cardActionButton: {
     marginTop: 14,
     alignSelf: 'stretch',
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.surface,
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#dbe4ec',
+    borderColor: Palette.border,
   },
   cardActionButtonText: {
-    color: '#42566b',
+    color: Palette.inkSoft,
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   mainButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.surface,
     borderRadius: 999,
     paddingVertical: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#dbe4ec',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   mainButtonInner: {
     flexDirection: 'row',
@@ -1477,7 +1533,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   mainButtonText: {
-    color: '#42566b',
+    color: Palette.inkSoft,
     textAlign: 'left',
     fontSize: 16,
     fontWeight: '700',
@@ -1486,43 +1542,45 @@ const styles = StyleSheet.create({
   },
   emergencyOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(61, 47, 44, 0.55)',
     justifyContent: 'center',
     padding: 24,
   },
   emergencyContent: {
-    backgroundColor: '#7f1d1d',
-    borderRadius: 18,
-    padding: 22,
+    backgroundColor: Palette.emergencyDeep,
+    borderRadius: 22,
+    padding: 24,
     borderWidth: 2,
-    borderColor: '#fecaca',
+    borderColor: Palette.primarySoft,
   },
   emergencyTitle: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: Fonts.serif,
     lineHeight: 30,
     textAlign: 'center',
   },
   emergencyMessage: {
-    marginTop: 10,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    marginTop: 12,
+    color: Palette.emergencyOnDark,
+    fontSize: 15,
+    fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   emergencyButton: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 12,
+    marginTop: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    paddingVertical: 14,
   },
   emergencyButtonText: {
-    color: '#7f1d1d',
+    color: Palette.emergencyDeep,
     textAlign: 'center',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   journalPage: {
     width: '100%',
@@ -1534,152 +1592,394 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   journalPageTitle: {
-    color: '#2D3436',
-    fontSize: 17,
+    color: Palette.ink,
+    fontSize: 22,
     fontWeight: '700',
+    fontFamily: Fonts.serif,
   },
   journalPageHeaderSpacer: {
-    width: 34,
-    height: 34,
+    width: 38,
+    height: 38,
   },
   journalSubtitle: {
-    marginTop: 6,
-    color: '#6b7280',
-    fontSize: 12,
-    lineHeight: 18,
+    marginTop: 4,
+    color: Palette.inkMuted,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: 'left',
   },
   journalTextarea: {
-    marginTop: 12,
-    minHeight: 108,
+    marginTop: 14,
+    minHeight: 120,
     borderWidth: 1,
-    borderColor: '#d3dee8',
-    backgroundColor: '#f8fbff',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#1f2937',
+    borderColor: Palette.border,
+    backgroundColor: '#FDF8F2',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: Palette.ink,
     fontSize: 14,
   },
   journalFormFooter: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   journalImageButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#dbe4ec',
-    borderRadius: 12,
-    paddingVertical: 10,
-    backgroundColor: '#f8fafc',
+    borderColor: Palette.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    backgroundColor: Palette.surface,
     alignItems: 'center',
   },
   journalImageButtonText: {
-    color: '#42566b',
+    color: Palette.inkSoft,
     fontSize: 13,
     fontWeight: '700',
   },
   journalSaveButton: {
     flex: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    backgroundColor: '#e7eef6',
+    borderRadius: 14,
+    paddingVertical: 12,
+    backgroundColor: Palette.primary,
     alignItems: 'center',
   },
   journalSaveButtonText: {
-    color: '#334155',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   journalClearAllButton: {
-    marginTop: 8,
+    marginTop: 10,
     alignSelf: 'flex-start',
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#fecaca',
-    backgroundColor: '#fff1f2',
+    borderColor: Palette.primarySoft,
+    backgroundColor: '#FCEEED',
   },
   journalClearAllButtonText: {
-    color: '#b91c1c',
+    color: Palette.primaryDeep,
     fontSize: 12,
     fontWeight: '700',
   },
   journalSelectedImageRow: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   journalSelectedImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 10,
+    width: 56,
+    height: 56,
+    borderRadius: 12,
   },
   journalSelectedImageLabel: {
     flex: 1,
-    color: '#64748b',
+    color: Palette.inkMuted,
     fontSize: 12,
   },
   journalFeed: {
-    marginTop: 14,
-    gap: 10,
+    marginTop: 16,
+    gap: 12,
   },
   journalEntryCard: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 14,
-    padding: 12,
-    backgroundColor: '#fff',
+    borderColor: Palette.border,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: '#FFFCF9',
+    ...Shadow.soft,
   },
   journalEntryTimestamp: {
-    color: '#64748b',
+    color: Palette.inkMuted,
     fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.4,
   },
   journalEntryText: {
     marginTop: 6,
-    color: '#1f2937',
-    fontSize: 13,
-    lineHeight: 20,
+    color: Palette.ink,
+    fontSize: 14,
+    lineHeight: 21,
   },
   journalThumb: {
-    marginTop: 8,
-    width: 92,
-    height: 92,
-    borderRadius: 10,
+    marginTop: 10,
+    width: 96,
+    height: 96,
+    borderRadius: 12,
   },
   journalDeleteButton: {
     marginTop: 10,
     alignSelf: 'flex-start',
     paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#FCEEED',
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: Palette.primarySoft,
   },
   journalDeleteButtonText: {
-    color: '#b91c1c',
+    color: Palette.primaryDeep,
     fontWeight: '700',
     fontSize: 12,
   },
   journalImageViewerModal: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 18,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Palette.border,
   },
   journalViewerImage: {
     width: '100%',
     height: 320,
-    borderRadius: 10,
+    borderRadius: 14,
     resizeMode: 'contain',
-    backgroundColor: '#f8fafc',
+    backgroundColor: Palette.surfaceMuted,
+  },
+
+  // Welcome / greeting
+  welcomeBlock: {
+    marginBottom: 26,
+    alignItems: 'center',
+  },
+  welcomeEyebrow: {
+    color: Palette.inkMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  welcomeTitle: {
+    marginTop: 10,
+    color: Palette.ink,
+    fontSize: 38,
+    lineHeight: 46,
+    fontFamily: Fonts.serif,
+    fontWeight: '500',
+    fontStyle: 'italic',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  welcomeOrnament: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    alignSelf: 'center',
+  },
+  welcomeOrnamentLine: {
+    width: 28,
+    height: 1,
+    backgroundColor: Palette.borderStrong,
+  },
+
+  // Status hero card (replaces traffic shell)
+  statusHero: {
+    marginBottom: 26,
+    borderRadius: 32,
+    padding: 26,
+    borderWidth: 1,
+    borderColor: Palette.border,
+    ...Shadow.lift,
+  },
+  statusTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  dotStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dotIndicator: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+  },
+  statusDivider: {
+    marginTop: 22,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  statusDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(168, 87, 108, 0.22)',
+  },
+  statusDividerOrnament: {
+    fontSize: 14,
+    color: Palette.primary,
+  },
+  statusAffirmation: {
+    color: Palette.inkSoft,
+    fontFamily: Fonts.serif,
+    fontStyle: 'italic',
+    fontSize: 16,
+    lineHeight: 26,
+    textAlign: 'center',
+    paddingHorizontal: 6,
+  },
+
+  // Bento grid
+  bentoSection: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  sectionLabel: {
+    marginBottom: 16,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: Palette.inkMuted,
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  bentoCardSmall: {
+    width: 132,
+    padding: 18,
+    borderRadius: 24,
+    backgroundColor: '#FFFCF9',
+    borderWidth: 1,
+    borderColor: Palette.border,
+    ...Shadow.soft,
+  },
+  bentoCardWide: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: '#FFFCF9',
+    borderWidth: 1,
+    borderColor: Palette.border,
+    ...Shadow.soft,
+  },
+  bentoCardEqual: {
+    flex: 1,
+    padding: 18,
+    borderRadius: 24,
+    minHeight: 168,
+    backgroundColor: '#FFFCF9',
+    borderWidth: 1,
+    borderColor: Palette.border,
+    ...Shadow.soft,
+  },
+  bentoIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  bentoCardTitle: {
+    color: Palette.ink,
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Fonts.serif,
+    lineHeight: 22,
+  },
+  bentoCardDescription: {
+    marginTop: 6,
+    color: Palette.inkMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  bentoCardCTA: {
+    marginTop: 16,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Palette.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
+  },
+  bentoCardCTAText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+
+  // Emergency wide bento card (full width, dark)
+  bentoCardEmergency: {
+    marginBottom: 12,
+    borderRadius: 24,
+    padding: 20,
+    backgroundColor: Palette.emergencyDeep,
+    borderWidth: 1,
+    borderColor: Palette.emergencyMid,
+    shadowColor: Palette.emergencyDeep,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  bentoEmergencyContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  bentoEmergencyIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoEmergencyTextWrap: {
+    flex: 1,
+  },
+  bentoEmergencyTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: Fonts.serif,
+  },
+  bentoEmergencyDescription: {
+    marginTop: 4,
+    color: Palette.emergencyOnDark,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  bentoEmergencySetup: {
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  bentoEmergencySetupText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
 });

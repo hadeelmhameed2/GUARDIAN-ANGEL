@@ -3,9 +3,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   SafeAreaView,
   ScrollView,
@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import {
+  awaitSessionReady,
   getExitFundData,
   getCurrentStatus,
   getIsEmergencyActive,
@@ -23,14 +24,14 @@ import {
   setExitFundData,
   setUserDefinedLimit,
   stopEmergencyMode,
-  type RiskState,
   type ExitFundTransaction,
 } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
+import { Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 
 const EMERGENCY_TRANSFER_AMOUNT = 10;
 const EMERGENCY_TRANSFER_INTERVAL_MS = 4000;
-const LIMIT_PRESETS = [500, 1000, 3000, 5000];
+const LIMIT_PRESETS = [1000, 5000, 10000, 50000];
 const MOCK_PURCHASES = [
   { id: 'p1', labelKey: 'exitFund.mockPurchases.busTicket', amount: 18.2 },
   { id: 'p2', labelKey: 'exitFund.mockPurchases.groceries', amount: 74.35 },
@@ -38,16 +39,7 @@ const MOCK_PURCHASES = [
   { id: 'p4', labelKey: 'exitFund.mockPurchases.coffee', amount: 14.9 },
 ];
 
-const PAGE_GRADIENTS: Record<RiskState, [string, string, string]> = {
-  red: ['#FFD6D6', '#FAF3E0', '#FAF3E0'],
-  yellow: ['#FFE8D1', '#FAF3E0', '#FAF3E0'],
-  green: ['#E8F5E9', '#FAF3E0', '#FAF3E0'],
-};
-const BRANCH_TINT: Record<RiskState, string> = {
-  red: '#9f4b4b',
-  yellow: '#a8692e',
-  green: '#4d6d52',
-};
+const PAGE_GRADIENTS = PageGradient;
 
 export default function ExitFundScreen() {
   const router = useRouter();
@@ -74,14 +66,17 @@ export default function ExitFundScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasSecureSessionAccess()) return;
-      const saved = getExitFundData();
-      setIsEmergencyActive(getIsEmergencyActive());
-      setBalance(saved.exitFundBalance);
-      setMainAccountBalance(saved.mainAccountBalance);
-      setTargetLimit(saved.userDefinedLimit);
-      setTargetInput(String(saved.userDefinedLimit));
-      setTransactions(saved.transactions);
+      void (async () => {
+        await awaitSessionReady();
+        if (!hasSecureSessionAccess()) return;
+        const saved = getExitFundData();
+        setIsEmergencyActive(getIsEmergencyActive());
+        setBalance(saved.exitFundBalance);
+        setMainAccountBalance(saved.mainAccountBalance);
+        setTargetLimit(saved.userDefinedLimit);
+        setTargetInput(String(saved.userDefinedLimit));
+        setTransactions(saved.transactions);
+      })();
     }, []),
   );
 
@@ -146,6 +141,7 @@ export default function ExitFundScreen() {
   );
 
   const addSimulatedTransaction = async (amount: number, note: string) => {
+    await awaitSessionReady();
     if (!hasSecureSessionAccess()) return;
     const nextTransaction: ExitFundTransaction = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -166,20 +162,21 @@ export default function ExitFundScreen() {
   };
 
   const saveTargetLimit = async (rawValue: string) => {
+    await awaitSessionReady();
     if (!hasSecureSessionAccess()) return;
     const parsed = Number(rawValue);
     if (!Number.isFinite(parsed)) {
       setTargetInput(String(targetLimit));
       return;
     }
-    const clamped = Math.min(5000, Math.max(500, Math.round(parsed)));
-    setTargetLimit(clamped);
-    setTargetInput(String(clamped));
-    await setUserDefinedLimit(clamped);
+    const sanitized = Math.max(0, Math.round(parsed));
+    setTargetLimit(sanitized);
+    setTargetInput(String(sanitized));
+    await setUserDefinedLimit(sanitized);
     await setExitFundData({
       exitFundBalance: balance,
       mainAccountBalance,
-      userDefinedLimit: clamped,
+      userDefinedLimit: sanitized,
       transactions,
     });
     Keyboard.dismiss();
@@ -188,6 +185,7 @@ export default function ExitFundScreen() {
   };
 
   const applyRoundups = async () => {
+    await awaitSessionReady();
     if (!hasSecureSessionAccess() || roundupsApplied) return;
     const nextBalance = Number((balance + roundupsTotal).toFixed(2));
     const nextTransaction: ExitFundTransaction = {
@@ -214,6 +212,7 @@ export default function ExitFundScreen() {
   };
 
   const applyCustomTransaction = async () => {
+    await awaitSessionReady();
     if (!hasSecureSessionAccess()) return;
     const parsed = Number(transactionInput);
     if (!Number.isFinite(parsed) || parsed === 0) return;
@@ -231,24 +230,24 @@ export default function ExitFundScreen() {
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
     <SafeAreaView style={[styles.container, { direction }]}>
-      <View pointerEvents="none" style={styles.branchOverlayWrap}>
-        <Image
-          source={require('../assets/images/traffic-light-bg.png')}
-          style={[styles.branchOverlay, { tintColor: BRANCH_TINT[currentStatus] }]}
-        />
-      </View>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.headerIconButton} onPress={handleBack}>
-            <Image source={require('../assets/images/turn-back.png')} style={styles.backArrowImage} />
+          <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
+            <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
           </TouchableOpacity>
-          <Text style={styles.title}>{t('exitFund.title')}</Text>
-          <TouchableOpacity style={styles.headerIconButton} onPress={() => router.replace('/(tabs)')}>
-            <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+          <View style={styles.titleWrap}>
+            <Text style={styles.eyebrow}>Vault</Text>
+            <Text style={styles.title}>{t('exitFund.title')}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => router.replace('/(tabs)')}
+            accessibilityLabel="Exit">
+            <Feather name="x" size={18} color={Palette.inkSoft} />
           </TouchableOpacity>
         </View>
 
@@ -385,11 +384,9 @@ export default function ExitFundScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <View style={styles.backButtonContent}>
-            <Text style={styles.backButtonText}>{t('exitFund.backSafeZone')}</Text>
-            <Text style={styles.backButtonEmoji}>🏠</Text>
-          </View>
+        <TouchableOpacity style={styles.backToZoneButton} onPress={handleBack}>
+          <Feather name="home" size={16} color="#FFFFFF" />
+          <Text style={styles.backToZoneText}>{t('exitFund.backSafeZone')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -405,199 +402,192 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  branchOverlayWrap: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  branchOverlay: {
-    position: 'absolute',
-    bottom: -90,
-    right: -35,
-    width: 420,
-    height: 520,
-    opacity: 0.15,
-    transform: [{ rotate: '-14deg' }],
-    zIndex: 0,
-  },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 28,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2D3436',
-    textAlign: 'left',
-    letterSpacing: 0.2,
+    paddingBottom: 32,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 22,
+    gap: 12,
+  },
+  titleWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  eyebrow: {
+    color: Palette.inkMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+  },
+  title: {
+    marginTop: 4,
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: Fonts.serif,
+    fontStyle: 'italic',
+    color: Palette.ink,
+    textAlign: 'center',
+    letterSpacing: -0.2,
   },
   headerIconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  backArrowImage: {
-    width: 25,
-    height: 25,
-    resizeMode: 'contain',
-    tintColor: '#374151',
-  },
-  headerExitEmoji: {
-    fontSize: 16,
-  },
-  stealthExitImage: {
-    width: 18,
-    height: 18,
-    resizeMode: 'contain',
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   balanceCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 24,
-    marginBottom: 20,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 32,
+    padding: 26,
+    marginBottom: 22,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: Palette.border,
+    ...Shadow.lift,
   },
   balanceCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 10,
   },
   balanceEmoji: {
     fontSize: 18,
   },
   balanceLabel: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    fontWeight: '600',
+    fontSize: 11,
+    color: Palette.inkMuted,
+    fontWeight: '700',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   balance: {
-    marginTop: 4,
-    fontSize: 36,
+    marginTop: 6,
+    fontSize: 38,
     fontWeight: '700',
-    color: '#2D3436',
+    fontFamily: Fonts.serif,
+    color: Palette.ink,
+    letterSpacing: -0.5,
   },
   balanceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 10,
   },
   processingWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: 6,
   },
   processingText: {
     marginTop: 4,
-    color: '#b45309',
+    color: Palette.statusYellowInk,
     fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.4,
   },
   note: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6B7280',
+    marginTop: 10,
+    fontSize: 13,
+    color: Palette.inkMuted,
     fontWeight: '500',
   },
   progressBarWrap: {
-    marginTop: 14,
+    marginTop: 16,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F1E4DA',
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: '#5F7A61',
+    backgroundColor: Palette.primary,
   },
   progressPercent: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 12,
-    color: '#5F7A61',
-    fontWeight: '600',
+    color: Palette.primaryDeep,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   mainAccountText: {
-    marginTop: 8,
-    fontSize: 13,
-    color: '#9CA3AF',
+    marginTop: 10,
+    fontSize: 12,
+    color: Palette.inkMuted,
     fontWeight: '500',
+    letterSpacing: 0.2,
   },
   emergencyBanner: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: Palette.statusRedBg,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 20,
+    borderColor: Palette.primarySoft,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    marginBottom: 22,
   },
   emergencyBannerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   emergencyBannerEmoji: {
     fontSize: 18,
   },
   emergencyBannerText: {
     flex: 1,
-    color: '#991B1B',
-    fontSize: 14,
+    color: Palette.emergencyDeep,
+    fontSize: 13,
     fontWeight: '600',
+    lineHeight: 19,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   safeNowButton: {
-    marginTop: 12,
+    marginTop: 14,
     alignSelf: 'flex-end',
-    backgroundColor: '#5F7A61',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: Palette.primary,
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
   },
   safeNowButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 24,
+    padding: 22,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 12,
   },
   sectionEmoji: {
     fontSize: 16,
@@ -605,99 +595,106 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2D3436',
+    fontFamily: Fonts.serif,
+    color: Palette.ink,
     textAlign: 'left',
     writingDirection: 'ltr',
     flex: 1,
   },
   helperText: {
-    color: '#9CA3AF',
-    marginBottom: 12,
+    color: Palette.inkMuted,
+    marginBottom: 14,
     fontSize: 13,
+    lineHeight: 19,
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   limitInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Palette.border,
     borderRadius: 14,
-    backgroundColor: '#FAFAFA',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: '#FDF8F2',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     fontSize: 16,
-    color: '#2D3436',
+    color: Palette.ink,
   },
   limitRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   limitSaveButton: {
-    backgroundColor: '#5F7A61',
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    backgroundColor: Palette.primary,
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 13,
   },
   limitSaveButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   savedText: {
-    color: '#5F7A61',
+    color: Palette.primaryDeep,
     fontWeight: '700',
-    marginBottom: 8,
-    fontSize: 13,
+    marginBottom: 10,
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
   presetRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   presetButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    paddingVertical: 9,
-    backgroundColor: '#FAFAFA',
+    borderColor: Palette.border,
+    borderRadius: 999,
+    paddingVertical: 10,
+    backgroundColor: '#FDF8F2',
   },
   presetButtonActive: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#5F7A61',
+    backgroundColor: Palette.primarySoft,
+    borderColor: Palette.primary,
   },
   presetText: {
-    color: '#6B7280',
+    color: Palette.inkMuted,
     textAlign: 'center',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   presetTextActive: {
-    color: '#2D3436',
+    color: Palette.primaryDeep,
   },
   progressText: {
-    color: '#6B7280',
+    color: Palette.inkMuted,
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'left',
     writingDirection: 'ltr',
   },
   actionButton: {
-    backgroundColor: '#5F7A61',
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: Palette.primary,
+    borderRadius: 999,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
   },
   actionButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: Palette.inkFaint,
   },
   actionButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     textAlign: 'center',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   customTransactionRow: {
     flexDirection: 'row',
@@ -708,16 +705,16 @@ const styles = StyleSheet.create({
   transactionInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Palette.border,
     borderRadius: 14,
-    backgroundColor: '#FAFAFA',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#2D3436',
+    backgroundColor: '#FDF8F2',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: Palette.ink,
     fontSize: 15,
   },
   emptyLabel: {
-    color: '#9CA3AF',
+    color: Palette.inkMuted,
     fontSize: 14,
     textAlign: 'left',
     writingDirection: 'ltr',
@@ -726,12 +723,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: Palette.divider,
   },
   txNote: {
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 14,
     flex: 1,
   },
@@ -740,39 +737,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   txInflow: {
-    color: '#5F7A61',
+    color: Palette.primaryDeep,
   },
   txOutflow: {
-    color: '#DC2626',
+    color: Palette.statusRedInk,
   },
-  backButton: {
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 18,
-    height: 60,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  backButtonContent: {
+  backToZoneButton: {
+    marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 10,
+    backgroundColor: Palette.primary,
+    borderRadius: 999,
+    paddingVertical: 16,
+    ...Shadow.lift,
   },
-  backButtonText: {
-    color: '#2D3436',
-    textAlign: 'left',
-    fontSize: 16,
-    fontWeight: '500',
-    writingDirection: 'ltr',
-    flex: 1,
-  },
-  backButtonEmoji: {
-    fontSize: 18,
+  backToZoneText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
 });

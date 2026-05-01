@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { Feather } from '@expo/vector-icons';
 import { getCurrentStatus, setCurrentStatus, statusFromScore, type RiskState } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
+import { BranchTint, Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 
 type AnswerOption = {
   key: 'never' | 'rarely' | 'sometimes' | 'often' | 'always';
@@ -40,21 +42,13 @@ const OPTIONS: AnswerOption[] = [
 ];
 
 const CATEGORY_THEME = {
-  green: { bg: '#E8F5E9', color: '#2E7D32', emoji: '🌿' },
-  yellow: { bg: '#FEF9E7', color: '#F9A825', emoji: '⚡' },
-  red: { bg: '#FDECEC', color: '#C62828', emoji: '🔴' },
+  green: { bg: Palette.sageSoft, color: Palette.statusGreenInk, emoji: '✿' },
+  yellow: { bg: Palette.goldSoft, color: Palette.statusYellowInk, emoji: '✧' },
+  red: { bg: Palette.roseSoft, color: Palette.statusRedInk, emoji: '❀' },
 } as const;
 
-const PAGE_GRADIENTS: Record<RiskState, [string, string]> = {
-  red: ['#FFD6D6', '#FAF3E0'],
-  yellow: ['#FFE8D1', '#FAF3E0'],
-  green: ['#E8F5E9', '#FAF3E0'],
-};
-const BRANCH_TINT: Record<RiskState, string> = {
-  red: '#9f4b4b',
-  yellow: '#a8692e',
-  green: '#4d6d52',
-};
+const PAGE_GRADIENTS = PageGradient;
+const BRANCH_TINT: Record<RiskState, string> = BranchTint;
 
 function scoreAnswer(key: AnswerOption['key'], isPositive: boolean) {
   const basePoints = OPTIONS.find((option) => option.key === key)?.points ?? 0;
@@ -108,19 +102,16 @@ export default function AssessmentScreen() {
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
     <SafeAreaView style={[styles.container, { direction }]}>
-      <View pointerEvents="none" style={styles.branchOverlayWrap}>
-        <Image
-          source={require('../assets/images/traffic-light-bg.png')}
-          style={[styles.branchOverlay, { tintColor: BRANCH_TINT[currentStatus] }]}
-        />
-      </View>
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.headerIconButton} onPress={handleBack}>
-          <Image source={require('../assets/images/turn-back.png')} style={styles.backArrowImage} />
+        <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
+          <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('assessment.title')}</Text>
-        <TouchableOpacity style={styles.headerIconButton} onPress={() => router.replace('/(tabs)')}>
-          <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+        <TouchableOpacity
+          style={styles.headerIconButton}
+          onPress={() => router.replace('/(tabs)')}
+          accessibilityLabel="Exit">
+          <Feather name="x" size={18} color={Palette.inkSoft} />
         </TouchableOpacity>
       </View>
 
@@ -146,9 +137,10 @@ export default function AssessmentScreen() {
           <TouchableOpacity
             key={option.key}
             style={styles.button}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             onPress={() => void handleAnswer(option.key)}>
             <Text style={styles.buttonText}>{t(`assessment.options.${option.key}`)}</Text>
+            <Feather name="chevron-right" size={18} color={Palette.primary} />
           </TouchableOpacity>
         ))}
       </View>
@@ -170,24 +162,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     padding: 20,
   },
-  branchOverlayWrap: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  branchOverlay: {
-    position: 'absolute',
-    bottom: -90,
-    right: -35,
-    width: 420,
-    height: 520,
-    opacity: 0.15,
-    transform: [{ rotate: '-14deg' }],
-    zIndex: 0,
-  },
   title: {
+    flex: 1,
     fontSize: 22,
     fontWeight: '700',
-    color: '#2D3436',
+    fontFamily: Fonts.serif,
+    color: Palette.ink,
     textAlign: 'center',
     letterSpacing: 0.2,
   },
@@ -195,120 +175,113 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 22,
     gap: 12,
   },
   headerIconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  backArrowImage: {
-    width: 25,
-    height: 25,
-    resizeMode: 'contain',
-    tintColor: '#374151',
-  },
-  headerExitEmoji: {
-    fontSize: 16,
-  },
-  stealthExitImage: {
-    width: 18,
-    height: 18,
-    resizeMode: 'contain',
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   progressBarWrap: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 20,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F1E4DA',
+    marginBottom: 24,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 3,
-    backgroundColor: '#5F7A61',
+    borderRadius: 4,
+    backgroundColor: Palette.primary,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 30,
-    marginBottom: 20,
+    backgroundColor: '#FFFCF9',
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    marginBottom: 22,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    borderColor: Palette.border,
+    ...Shadow.lift,
   },
   questionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   categoryEmoji: {
     fontSize: 12,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   progress: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    fontSize: 12,
+    color: Palette.inkMuted,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   body: {
-    fontSize: 18,
-    color: '#2D3436',
-    lineHeight: 28,
+    fontSize: 20,
+    color: Palette.ink,
+    lineHeight: 30,
     textAlign: 'left',
+    fontFamily: Fonts.serif,
+    fontWeight: '500',
     writingDirection: 'ltr',
-    fontWeight: '600',
   },
   optionsWrap: {
-    gap: 10,
+    gap: 12,
   },
   button: {
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFCF9',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 20,
+    borderColor: Palette.border,
+    borderRadius: 999,
+    paddingHorizontal: 22,
     paddingVertical: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    ...Shadow.soft,
   },
   buttonText: {
-    color: '#2D3436',
-    textAlign: 'left',
-    fontSize: 16,
-    fontWeight: '500',
+    color: Palette.ink,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   footerWrap: {
     marginTop: 'auto',
-    paddingTop: 16,
+    paddingTop: 18,
     alignItems: 'center',
   },
   footerText: {
-    color: '#9CA3AF',
+    color: Palette.inkMuted,
     fontSize: 12,
     fontWeight: '500',
+    letterSpacing: 0.4,
+    fontStyle: 'italic',
   },
 });
