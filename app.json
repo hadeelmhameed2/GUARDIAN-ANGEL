@@ -13,6 +13,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Guardian Angel uses your location to send emergency alerts with a live map link.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Guardian Angel uses your location for emergency safety workflows.",
+        "NSPhotoLibraryUsageDescription": "Allow Guardian Angel to attach photos to evidence journal entries.",
+        "NSMicrophoneUsageDescription": "Allow Guardian Angel to record voice notes for evidence journal entries.",
         "UIBackgroundModes": [
           "location"
         ]
@@ -31,7 +33,9 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
-        "SEND_SMS"
+        "SEND_SMS",
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES"
       ]
     },
     "web": {

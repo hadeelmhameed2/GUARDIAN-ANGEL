@@ -43,6 +43,9 @@ import {
   chainHashes,
   type EvidenceJournalEntry,
 } from '@/src/evidence';
+import { readJournalRaw, writeJournalRaw } from '@/src/journal-storage';
+import { pickJournalImageNative } from '@/src/journal-image';
+import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
 
 const HEADER_GRADIENTS = HeaderGradient;
 const PAGE_GRADIENTS = PageGradient;
@@ -164,38 +167,34 @@ export default function HomeScreen() {
         setPanicPhoneNumber(settings.phoneNumber);
         setPanicMessage(settings.emergencyMessage);
       })();
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const raw = window.localStorage.getItem(EVIDENCE_JOURNAL_STORAGE_KEY);
+      void (async () => {
+        const raw = await readJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY);
         if (!raw) {
           setJournalEntries([]);
           return;
         }
+        let parsed: EvidenceJournalEntry[];
         try {
-          const parsed = JSON.parse(raw) as EvidenceJournalEntry[];
-          if (!Array.isArray(parsed)) {
-            setJournalEntries([]);
-            return;
-          }
-          void (async () => {
-            const chained = await chainHashes(parsed);
-            const needsRewrite = chained.some(
-              (entry, idx) =>
-                entry.entryHash !== parsed[idx]?.entryHash ||
-                entry.previousEntryHash !== parsed[idx]?.previousEntryHash,
-            );
-            if (needsRewrite) {
-              try {
-                window.localStorage.setItem(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
-              } catch {
-                // ignore — display chained values regardless
-              }
-            }
-            setJournalEntries(chained);
-          })();
+          parsed = JSON.parse(raw) as EvidenceJournalEntry[];
         } catch {
           setJournalEntries([]);
+          return;
         }
-      }
+        if (!Array.isArray(parsed)) {
+          setJournalEntries([]);
+          return;
+        }
+        const chained = await chainHashes(parsed);
+        const needsRewrite = chained.some(
+          (entry, idx) =>
+            entry.entryHash !== parsed[idx]?.entryHash ||
+            entry.previousEntryHash !== parsed[idx]?.previousEntryHash,
+        );
+        if (needsRewrite) {
+          await writeJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
+        }
+        setJournalEntries(chained);
+      })();
     }, []),
   );
 
@@ -208,35 +207,34 @@ export default function HomeScreen() {
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   };
 
-  const persistJournalEntries = (entries: EvidenceJournalEntry[]) => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(entries));
-      return true;
-    } catch (error: any) {
-      const isQuotaError =
-        error?.name === 'QuotaExceededError' ||
-        error?.code === 22 ||
-        error?.code === 1014 ||
-        error?.name === 'NS_ERROR_DOM_QUOTA_REACHED';
-      if (isQuotaError) {
+  const persistJournalEntries = async (entries: EvidenceJournalEntry[]) => {
+    const result = await writeJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    if (!result.ok) {
+      if (result.quota) {
         Alert.alert(
           'Storage is full',
-          'Storage is full. Please delete old entries to add more, or upgrade to cloud storage.',
+          'Storage is full. Please delete old entries to add more.',
         );
       } else {
         Alert.alert('Save failed', 'Unable to save this entry right now.');
       }
       return false;
     }
+    return true;
   };
 
   const openImagePicker = () => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Unavailable', 'Image upload is currently available on web.');
+    if (Platform.OS === 'web') {
+      fileInputRef.current?.click();
       return;
     }
-    fileInputRef.current?.click();
+    void (async () => {
+      const picked = await pickJournalImageNative();
+      if (picked) {
+        setSelectedJournalImage(picked.base64);
+        setSelectedJournalImageName(picked.name);
+      }
+    })();
   };
 
   const compressImageToDataUrl = (file: File): Promise<string> =>
@@ -304,7 +302,7 @@ export default function HomeScreen() {
 
     const draft = [baseEntry, ...journalEntries];
     const chained = await chainHashes(draft);
-    const persisted = persistJournalEntries(chained);
+    const persisted = await persistJournalEntries(chained);
     if (!persisted) return;
     setJournalEntries(chained);
     setIncidentDescription('');
@@ -320,73 +318,99 @@ export default function HomeScreen() {
   const deleteJournalEntry = async (id: string) => {
     const filtered = journalEntries.filter((entry) => entry.id !== id);
     const rechained = await chainHashes(filtered);
-    const persisted = persistJournalEntries(rechained);
+    const persisted = await persistJournalEntries(rechained);
     if (!persisted) return;
     setJournalEntries(rechained);
   };
 
-  const startAudioRecording = async () => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      Alert.alert('Web only', 'Voice recording is currently available on the web.');
-      return;
-    }
-    if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === 'undefined') {
-      Alert.alert('Unsupported', 'Microphone recording is unavailable in this browser.');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioStreamRef.current = stream;
-      audioChunksRef.current = [];
-      const RecorderCtor = (window as any).MediaRecorder;
-      const recorder = new RecorderCtor(stream);
-      recorder.ondataavailable = (event: any) => {
-        if (event.data?.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      recorder.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, {
-          type: recorder.mimeType || 'audio/webm',
-        });
-        try {
-          const dataUrl = await blobToDataUrl(blob);
-          setSelectedJournalAudio(dataUrl);
-        } catch {
-          Alert.alert('Recording error', 'Could not save the audio recording.');
-        }
-        if (audioStreamRef.current) {
-          audioStreamRef.current.getTracks().forEach((track) => track.stop());
-          audioStreamRef.current = null;
-        }
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecordingAudio(true);
-      setRecordingSeconds(0);
-      setSelectedJournalAudioDuration(0);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => {
-          const next = prev + 1;
-          setSelectedJournalAudioDuration(next);
-          return next;
-        });
-      }, 1000);
-    } catch {
-      Alert.alert('Microphone unavailable', 'Allow microphone access to record audio.');
-    }
+  const beginRecordingTimer = () => {
+    setRecordingSeconds(0);
+    setSelectedJournalAudioDuration(0);
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingSeconds((prev) => {
+        const next = prev + 1;
+        setSelectedJournalAudioDuration(next);
+        return next;
+      });
+    }, 1000);
   };
 
-  const stopAudioRecording = () => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state === 'recording') {
-      recorder.stop();
-    }
-    setIsRecordingAudio(false);
+  const endRecordingTimer = () => {
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
+  };
+
+  const startAudioRecording = async () => {
+    if (Platform.OS === 'web') {
+      if (typeof window === 'undefined') return;
+      if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === 'undefined') {
+        Alert.alert('Unsupported', 'Microphone recording is unavailable in this browser.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStreamRef.current = stream;
+        audioChunksRef.current = [];
+        const RecorderCtor = (window as any).MediaRecorder;
+        const recorder = new RecorderCtor(stream);
+        recorder.ondataavailable = (event: any) => {
+          if (event.data?.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+        recorder.onstop = async () => {
+          const blob = new Blob(audioChunksRef.current, {
+            type: recorder.mimeType || 'audio/webm',
+          });
+          try {
+            const dataUrl = await blobToDataUrl(blob);
+            setSelectedJournalAudio(dataUrl);
+          } catch {
+            Alert.alert('Recording error', 'Could not save the audio recording.');
+          }
+          if (audioStreamRef.current) {
+            audioStreamRef.current.getTracks().forEach((track) => track.stop());
+            audioStreamRef.current = null;
+          }
+        };
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+        setIsRecordingAudio(true);
+        beginRecordingTimer();
+      } catch {
+        Alert.alert('Microphone unavailable', 'Allow microphone access to record audio.');
+      }
+      return;
+    }
+
+    const started = await startNativeRecording();
+    if (started) {
+      setIsRecordingAudio(true);
+      beginRecordingTimer();
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (Platform.OS === 'web') {
+      const recorder = mediaRecorderRef.current;
+      if (recorder?.state === 'recording') {
+        recorder.stop();
+      }
+      setIsRecordingAudio(false);
+      endRecordingTimer();
+      return;
+    }
+    void (async () => {
+      const captured = await stopNativeRecording();
+      setIsRecordingAudio(false);
+      endRecordingTimer();
+      if (captured) {
+        setSelectedJournalAudio(captured.base64);
+        setSelectedJournalAudioDuration(captured.durationSec);
+      }
+    })();
   };
 
   const clearSelectedAudio = () => {
@@ -444,15 +468,19 @@ export default function HomeScreen() {
         text: 'Clear',
         style: 'destructive',
         onPress: () => {
-          const persisted = persistJournalEntries([]);
-          if (!persisted) return;
-          setJournalEntries([]);
-          setIncidentDescription('');
-          setSelectedJournalImage(null);
-          setSelectedJournalImageName('');
-          if (Platform.OS === 'web' && fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
+          void (async () => {
+            const persisted = await persistJournalEntries([]);
+            if (!persisted) return;
+            setJournalEntries([]);
+            setIncidentDescription('');
+            setSelectedJournalImage(null);
+            setSelectedJournalImageName('');
+            setSelectedJournalAudio(null);
+            setSelectedJournalAudioDuration(0);
+            if (Platform.OS === 'web' && fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          })();
         },
       },
     ]);
