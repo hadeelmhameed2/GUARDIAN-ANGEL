@@ -3,7 +3,6 @@ import React, { useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { Feather } from '@expo/vector-icons';
 import { getCurrentStatus, setCurrentStatus, statusFromScore, type RiskState } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
 import { BranchTint, Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
@@ -104,14 +103,14 @@ export default function AssessmentScreen() {
     <SafeAreaView style={[styles.container, { direction }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
-          <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
+          <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
         </TouchableOpacity>
         <Text style={styles.title}>{t('assessment.title')}</Text>
         <TouchableOpacity
           style={styles.headerIconButton}
           onPress={() => router.replace('/(tabs)')}
           accessibilityLabel="Exit">
-          <Feather name="x" size={18} color={Palette.inkSoft} />
+          <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
         </TouchableOpacity>
       </View>
 
@@ -140,7 +139,7 @@ export default function AssessmentScreen() {
             activeOpacity={0.75}
             onPress={() => void handleAnswer(option.key)}>
             <Text style={styles.buttonText}>{t(`assessment.options.${option.key}`)}</Text>
-            <Feather name="chevron-right" size={18} color={Palette.primary} />
+            <Text style={{ fontSize: 18, color: Palette.primary, lineHeight: 18 }}>▶</Text>
           </TouchableOpacity>
         ))}
       </View>

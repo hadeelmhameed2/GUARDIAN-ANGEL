@@ -1,4 +1,3 @@
-import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -85,7 +84,7 @@ export default function SheltersListScreen() {
       </View>
 
       <View style={styles.metaRow}>
-        <Feather name="map-pin" size={12} color={Palette.inkMuted} />
+        <Text style={{ fontSize: 12, color: Palette.inkMuted, lineHeight: 12 }}>📍</Text>
         <Text style={styles.metaText}>
           {item.city}
           <Text style={styles.metaDivider}>  ·  </Text>
@@ -99,7 +98,7 @@ export default function SheltersListScreen() {
         onPress={() => void handleCall(item.phone)}
         accessibilityRole="button"
         accessibilityLabel={`Call ${item.name}`}>
-        <Feather name="phone-call" size={14} color="#FFFFFF" />
+        <Text style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 14 }}>📞</Text>
         <Text style={styles.callButtonText}>Call Now</Text>
       </TouchableOpacity>
     </View>
@@ -118,7 +117,7 @@ export default function SheltersListScreen() {
           onPress={handleBackToDashboard}
           accessibilityRole="button"
           accessibilityLabel="Back to App">
-          <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
+          <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
         </TouchableOpacity>
         <View style={styles.titleWrap}>
           <Text style={styles.eyebrow}>Resources</Text>
@@ -129,13 +128,13 @@ export default function SheltersListScreen() {
           onPress={handleQuickExit}
           accessibilityRole="button"
           accessibilityLabel="Emergency Exit">
-          <Feather name="x" size={18} color={Palette.inkSoft} />
+          <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchWrap}>
         <View style={styles.searchInputWrap}>
-          <Feather name="search" size={16} color={Palette.inkMuted} style={styles.searchIcon} />
+          <Text style={[styles.searchIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔍</Text>
           <TextInput
             style={styles.searchInput}
             value={query}
@@ -160,7 +159,7 @@ export default function SheltersListScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
-              <Feather name="search" size={28} color={Palette.primary} />
+              <Text style={{ fontSize: 28, color: Palette.primary, lineHeight: 28 }}>🔍</Text>
             </View>
             <Text style={styles.emptyTitle}>No matching resources</Text>
             <Text style={styles.emptySubtitle}>Try another city or region.</Text>

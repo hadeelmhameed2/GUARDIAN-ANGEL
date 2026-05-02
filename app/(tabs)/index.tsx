@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch } from '@/src/api';
@@ -272,7 +271,7 @@ export default function CalculatorMaskScreen() {
                 style={styles.authCloseButton}
                 onPress={() => setShowAuthPanel(false)}
                 accessibilityLabel="Close">
-                <Feather name="x" size={20} color={Palette.inkSoft} />
+                <Text style={{ fontSize: 20, color: Palette.inkSoft, lineHeight: 20 }}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -282,7 +281,7 @@ export default function CalculatorMaskScreen() {
               showsVerticalScrollIndicator={false}>
               <View style={styles.authBrandWrap}>
                 <View style={styles.authBrandIcon}>
-                  <Feather name="heart" size={28} color={Palette.primary} />
+                  <Text style={{ fontSize: 28, color: Palette.primary, lineHeight: 28 }}>❤️</Text>
                 </View>
                 <Text style={styles.authBrandTitle}>Guardian</Text>
                 <Text style={styles.authBrandSubtitle}>Your safe, private space.</Text>
@@ -290,7 +289,7 @@ export default function CalculatorMaskScreen() {
 
               <View style={styles.authForm}>
                 <View style={styles.authFieldWrap}>
-                  <Feather name="user" size={16} color={Palette.inkMuted} style={styles.authFieldIcon} />
+                  <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>👤</Text>
                   <TextInput
                     style={styles.authField}
                     placeholder="Username"
@@ -303,7 +302,7 @@ export default function CalculatorMaskScreen() {
                 </View>
 
                 <View style={styles.authFieldWrap}>
-                  <Feather name="lock" size={16} color={Palette.inkMuted} style={styles.authFieldIcon} />
+                  <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔒</Text>
                   <TextInput
                     style={styles.authField}
                     placeholder="Password"
@@ -316,11 +315,9 @@ export default function CalculatorMaskScreen() {
                     onPress={() => setShowPassword((prev) => !prev)}
                     accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                     style={styles.authEyeButton}>
-                    <Feather
-                      name={showPassword ? 'eye-off' : 'eye'}
-                      size={18}
-                      color={Palette.inkMuted}
-                    />
+                    <Text style={{ fontSize: 18, color: Palette.inkMuted, lineHeight: 18 }}>
+                      {showPassword ? '🙈' : '👁️'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 

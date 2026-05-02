@@ -3,7 +3,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { Feather } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   Keyboard,
@@ -237,7 +236,7 @@ export default function ExitFundScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
-            <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
+            <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
           </TouchableOpacity>
           <View style={styles.titleWrap}>
             <Text style={styles.eyebrow}>Vault</Text>
@@ -247,7 +246,7 @@ export default function ExitFundScreen() {
             style={styles.headerIconButton}
             onPress={() => router.replace('/(tabs)')}
             accessibilityLabel="Exit">
-            <Feather name="x" size={18} color={Palette.inkSoft} />
+            <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -385,7 +384,7 @@ export default function ExitFundScreen() {
         </View>
 
         <TouchableOpacity style={styles.backToZoneButton} onPress={handleBack}>
-          <Feather name="home" size={16} color="#FFFFFF" />
+          <Text style={{ fontSize: 16, color: '#FFFFFF', lineHeight: 16 }}>🏠</Text>
           <Text style={styles.backToZoneText}>{t('exitFund.backSafeZone')}</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -17,7 +17,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Feather } from '@expo/vector-icons';
 import {
   getCurrentStatus,
   addTrustedContact,
@@ -780,7 +779,7 @@ export default function HomeScreen() {
           <View style={styles.journalPage}>
             <View style={styles.journalPageHeader}>
               <TouchableOpacity style={styles.backButton} onPress={() => setShowJournalModal(false)}>
-                <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
+                <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
               </TouchableOpacity>
               <Text style={styles.journalPageTitle}>Journal</Text>
               <TouchableOpacity
@@ -788,7 +787,7 @@ export default function HomeScreen() {
                 onPress={() => void exportEvidencePdf()}
                 disabled={isExportingEvidence}
                 accessibilityLabel="Export evidence PDF">
-                <Feather name="file-text" size={14} color="#FFFFFF" />
+                <Text style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 14 }}>📄</Text>
                 <Text style={styles.journalExportButtonText}>
                   {isExportingEvidence ? 'Exporting…' : 'Export'}
                 </Text>
@@ -817,17 +816,20 @@ export default function HomeScreen() {
               : null}
             <View style={styles.journalAttachRow}>
               <TouchableOpacity style={styles.journalAttachButton} onPress={openImagePicker}>
-                <Feather name="image" size={15} color={Palette.primaryDeep} />
+                <Text style={{ fontSize: 15, color: Palette.primaryDeep, lineHeight: 15 }}>🖼️</Text>
                 <Text style={styles.journalAttachButtonText}>Add image</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.journalAttachButton, isRecordingAudio && styles.journalAttachButtonRecording]}
                 onPress={() => (isRecordingAudio ? stopAudioRecording() : void startAudioRecording())}>
-                <Feather
-                  name={isRecordingAudio ? 'square' : 'mic'}
-                  size={15}
-                  color={isRecordingAudio ? '#FFFFFF' : Palette.primaryDeep}
-                />
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: isRecordingAudio ? '#FFFFFF' : Palette.primaryDeep,
+                    lineHeight: 15,
+                  }}>
+                  {isRecordingAudio ? '⏹️' : '🎤'}
+                </Text>
                 <Text
                   style={[
                     styles.journalAttachButtonText,
@@ -838,7 +840,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.journalSaveButton} onPress={() => void saveJournalEntry()}>
-              <Feather name="check" size={15} color="#FFFFFF" />
+              <Text style={{ fontSize: 15, color: '#FFFFFF', lineHeight: 15 }}>✓</Text>
               <Text style={styles.journalSaveButtonText}>Save entry</Text>
             </TouchableOpacity>
             {selectedJournalImage ? (
@@ -855,14 +857,14 @@ export default function HomeScreen() {
                       fileInputRef.current.value = '';
                     }
                   }}>
-                  <Feather name="x" size={16} color={Palette.inkMuted} />
+                  <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
             {selectedJournalAudio ? (
               <View style={styles.journalSelectedAudioRow}>
                 <View style={styles.journalSelectedAudioIcon}>
-                  <Feather name="mic" size={14} color={Palette.primaryDeep} />
+                  <Text style={{ fontSize: 14, color: Palette.primaryDeep, lineHeight: 14 }}>🎤</Text>
                 </View>
                 <View style={styles.journalSelectedAudioBody}>
                   {Platform.OS === 'web'
@@ -878,7 +880,7 @@ export default function HomeScreen() {
                     )}
                 </View>
                 <TouchableOpacity onPress={clearSelectedAudio}>
-                  <Feather name="x" size={16} color={Palette.inkMuted} />
+                  <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -911,7 +913,7 @@ export default function HomeScreen() {
                       : null}
                   {entry.entryHash ? (
                     <View style={styles.journalEntryHashRow}>
-                      <Feather name="link" size={10} color={Palette.inkFaint} />
+                      <Text style={{ fontSize: 12, color: Palette.inkFaint, lineHeight: 12 }}>🔗</Text>
                       <Text style={styles.journalEntryHash} numberOfLines={1}>
                         {entry.entryHash.slice(0, 16)}…
                       </Text>
@@ -928,7 +930,7 @@ export default function HomeScreen() {
           <>
             <View style={styles.headerRow}>
               <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityLabel="Back">
-                <Feather name="chevron-left" size={22} color={Palette.inkSoft} />
+                <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
               </TouchableOpacity>
               <View style={styles.headerRightActions}>
                 <LanguageSwitcher />
@@ -936,7 +938,7 @@ export default function HomeScreen() {
                   style={styles.quickExitButton}
                   onPress={() => router.replace('/(tabs)')}
                   accessibilityLabel="Exit">
-                  <Feather name="x" size={18} color={Palette.inkSoft} />
+                  <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -946,7 +948,7 @@ export default function HomeScreen() {
               <Text style={styles.welcomeTitle}>You are{'\n'}held here.</Text>
               <View style={styles.welcomeOrnament}>
                 <View style={styles.welcomeOrnamentLine} />
-                <Feather name="heart" size={11} color={Palette.primary} />
+                <Text style={{ fontSize: 11, color: Palette.primary, lineHeight: 11 }}>❤️</Text>
                 <View style={styles.welcomeOrnamentLine} />
               </View>
             </View>
@@ -986,7 +988,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardSmall}
                   onPress={() => setShowSafetyTipsModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
-                    <Feather name="shield" size={20} color={Palette.statusGreenInk} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🛡️</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
                   <Text style={styles.bentoCardDescription} numberOfLines={3}>
@@ -998,7 +1000,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardWide}
                   onPress={() => router.push('/assessment')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
-                    <Feather name="clipboard" size={20} color={Palette.primaryDeep} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📋</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
                   <Text style={styles.bentoCardDescription} numberOfLines={3}>
@@ -1006,7 +1008,7 @@ export default function HomeScreen() {
                   </Text>
                   <View style={styles.bentoCardCTA}>
                     <Text style={styles.bentoCardCTAText}>{t('homeScreen.actions.startQuiz')}</Text>
-                    <Feather name="arrow-right" size={13} color="#FFFFFF" />
+                    <Text style={{ fontSize: 13, color: '#FFFFFF', lineHeight: 13 }}>→</Text>
                   </View>
                 </TouchableOpacity>
               </View>
@@ -1016,7 +1018,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => setShowSupportModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.surfaceTinted }]}>
-                    <Feather name="phone-call" size={20} color={Palette.primaryDeep} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📞</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>{t('homeScreen.support.title')}</Text>
                   <Text style={styles.bentoCardDescription}>
@@ -1027,7 +1029,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => router.push('/shelters')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.goldSoft }]}>
-                    <Feather name="home" size={20} color={Palette.statusYellowInk} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🏠</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.shelters')}</Text>
                   <Text style={styles.bentoCardDescription}>
@@ -1043,7 +1045,7 @@ export default function HomeScreen() {
                 accessibilityLabel={t('panic.triggerTitle')}>
                 <View style={styles.bentoEmergencyContent}>
                   <View style={styles.bentoEmergencyIconWrap}>
-                    <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>⚠️</Text>
                   </View>
                   <View style={styles.bentoEmergencyTextWrap}>
                     <Text style={styles.bentoEmergencyTitle}>{t('panic.triggerTitle')}</Text>
@@ -1051,12 +1053,12 @@ export default function HomeScreen() {
                       {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
                     </Text>
                   </View>
-                  <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                  <Text style={{ fontSize: 20, color: '#FFFFFF', lineHeight: 20 }}>→</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.bentoEmergencySetup}
                   onPress={() => setShowPanicSettingsModal(true)}>
-                  <Feather name="settings" size={11} color="#FFFFFF" />
+                  <Text style={{ fontSize: 11, color: '#FFFFFF', lineHeight: 11 }}>⚙️</Text>
                   <Text style={styles.bentoEmergencySetupText}>{t('panic.setup.open')}</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -1066,7 +1068,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => router.push('/exit_fund')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
-                    <Feather name="lock" size={20} color={Palette.primaryDeep} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🔒</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.secureResources')}</Text>
                   <Text style={styles.bentoCardDescription}>
@@ -1077,7 +1079,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => setShowJournalModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
-                    <Feather name="book-open" size={20} color={Palette.statusGreenInk} />
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📖</Text>
                   </View>
                   <Text style={styles.bentoCardTitle}>Journal</Text>
                   <Text style={styles.bentoCardDescription}>
@@ -1756,8 +1758,8 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   safetyTipIcon: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 24,
+    lineHeight: 28,
   },
   safetyTipText: {
     flex: 1,
