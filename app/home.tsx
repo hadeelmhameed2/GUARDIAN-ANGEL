@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -46,6 +46,34 @@ import {
 import { readJournalRaw, writeJournalRaw } from '@/src/journal-storage';
 import { pickJournalImageNative } from '@/src/journal-image';
 import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
+import { MOOD_PALETTE } from '@/src/mood-checkin/constants';
+import { runSafetyCheckinPipeline } from '@/src/mood-checkin/pipeline';
+import { appendTodayMood, getMoodEntries, localDateString } from '@/src/mood-checkin/storage';
+import type { MoodEntry, MoodId } from '@/src/mood-checkin/types';
+
+const MOOD_LABEL_KEYS: Record<MoodId, 'moodSage' | 'moodMist' | 'moodDawn' | 'moodDust'> = {
+  sage: 'moodSage',
+  mist: 'moodMist',
+  dawn: 'moodDawn',
+  dust: 'moodDust',
+};
+
+const MOOD_HINT_KEYS: Record<MoodId, 'moodSageHint' | 'moodMistHint' | 'moodDawnHint' | 'moodDustHint'> = {
+  sage: 'moodSageHint',
+  mist: 'moodMistHint',
+  dawn: 'moodDawnHint',
+  dust: 'moodDustHint',
+};
+
+const WEEKDAY_LABEL_KEYS = [
+  'weekSun',
+  'weekMon',
+  'weekTue',
+  'weekWed',
+  'weekThu',
+  'weekFri',
+  'weekSat',
+] as const;
 
 const HEADER_GRADIENTS = HeaderGradient;
 const PAGE_GRADIENTS = PageGradient;
@@ -145,6 +173,8 @@ export default function HomeScreen() {
   const [isExportingEvidence, setIsExportingEvidence] = useState(false);
   const [journalEntries, setJournalEntries] = useState<EvidenceJournalEntry[]>([]);
   const [journalViewerImage, setJournalViewerImage] = useState<string | null>(null);
+  const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
+  const [showMoodPickerModal, setShowMoodPickerModal] = useState(false);
   const fileInputRef = useRef<any>(null);
   const mediaRecorderRef = useRef<any>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -199,7 +229,12 @@ export default function HomeScreen() {
         }
         setJournalEntries(chained);
       })();
-    }, []),
+      void (async () => {
+        const list = await getMoodEntries();
+        setMoodEntries(list);
+        await runSafetyCheckinPipeline(t);
+      })();
+    }, [t]),
   );
 
   const formatTimestamp = (date: Date) => {
@@ -587,6 +622,33 @@ export default function HomeScreen() {
   const pageGradient = PAGE_GRADIENTS[currentStatus];
   const heartAffirmationKey = HEART_AFFIRMATIONS[currentStatus];
 
+  /** Current calendar week Sun–Sat (visual order LTR). */
+  const weeklySunSat = useMemo(() => {
+    const today = new Date();
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - today.getDay());
+    sunday.setHours(0, 0, 0, 0);
+    return WEEKDAY_LABEL_KEYS.map((labelKey, i) => {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      const ds = localDateString(d);
+      const hit = moodEntries.find((e) => e.date === ds);
+      return { labelKey, dateStr: ds, mood: hit?.moodId };
+    });
+  }, [moodEntries]);
+
+  const checkedInToday = useMemo(() => {
+    const todayStr = localDateString(new Date());
+    return moodEntries.some((e) => e.date === todayStr);
+  }, [moodEntries]);
+
+  const onPickMood = async (id: MoodId) => {
+    const next = await appendTodayMood(id);
+    setMoodEntries(next);
+    await runSafetyCheckinPipeline(t);
+    setShowMoodPickerModal(false);
+  };
+
   const buildTrafficLightStyle = (light: RiskState) => {
     const isActive = light === currentStatus;
     const colors: Record<RiskState, string> = {
@@ -760,6 +822,54 @@ export default function HomeScreen() {
               <Text style={[styles.contactSaveButtonText, rtlText]}>{t('panic.setup.save')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowPanicSettingsModal(false)}>
+              <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showMoodPickerModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMoodPickerModal(false)}>
+        <View style={styles.supportOverlay}>
+          <View style={styles.supportModal}>
+            <Text style={[styles.supportModalTitle, rtlText]}>{t('moodCheckin.pickerTitle')}</Text>
+            <Text style={[styles.moodPickerHint, rtlText]}>{t('moodCheckin.pickerHint')}</Text>
+            <Text style={[styles.moodSpectrumCaption, rtlText]}>{t('moodCheckin.spectrumCaption')}</Text>
+            <View style={styles.moodPickerRow}>
+              {MOOD_PALETTE.map((m) => {
+                const todayStr = localDateString(new Date());
+                const todayEntry = moodEntries.find((e) => e.date === todayStr);
+                const selected = todayEntry?.moodId === m.id;
+                const hintKey = MOOD_HINT_KEYS[m.id];
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={styles.moodPickerOption}
+                    onPress={() => void onPickMood(m.id)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={t(`moodCheckin.${MOOD_LABEL_KEYS[m.id]}`)}
+                    accessibilityHint={t(`moodCheckin.${hintKey}`)}>
+                    <View
+                      style={[
+                        styles.moodPickerDotOuter,
+                        { borderColor: m.border },
+                        selected ? styles.moodPickerDotOuterSelected : null,
+                      ]}>
+                      <View style={[styles.moodPickerDotInner, { backgroundColor: m.color }]} />
+                    </View>
+                    <Text style={[styles.moodPickerLabel, rtlText]} numberOfLines={2}>
+                      {t(`moodCheckin.${MOOD_LABEL_KEYS[m.id]}`)}
+                    </Text>
+                    <Text style={[styles.moodPickerTooltip, rtlText]} numberOfLines={3}>
+                      {t(`moodCheckin.${hintKey}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowMoodPickerModal(false)}>
               <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
@@ -990,6 +1100,63 @@ export default function HomeScreen() {
 
             <View style={styles.bentoSection}>
               <Text style={[styles.sectionLabel, rtlText]}>{t('homeScreen.actions.subheader')}</Text>
+
+              <View style={styles.bentoMoodCard}>
+                <TouchableOpacity
+                  style={styles.bentoMoodTouchable}
+                  onPress={() => setShowMoodPickerModal(true)}
+                  activeOpacity={0.88}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('moodCheckin.boxTitle')}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: Palette.roseSoft }]}>
+                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🌿</Text>
+                  </View>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('moodCheckin.boxTitle')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]}>{t('moodCheckin.boxDescription')}</Text>
+                  <Text
+                    style={[
+                      styles.moodBentoStatus,
+                      rtlText,
+                      checkedInToday ? styles.moodBentoStatusOn : null,
+                    ]}>
+                    {checkedInToday ? t('moodCheckin.checkedInToday') : t('moodCheckin.tapToCheckIn')}
+                  </Text>
+                  <Text style={[styles.moodBentoWeekLabel, rtlText]}>{t('moodCheckin.weeklyOverview')}</Text>
+                  <Text style={[styles.moodBentoSpectrumCaption, rtlText]}>{t('moodCheckin.spectrumCaption')}</Text>
+                  <View style={styles.moodBentoWeekStrip}>
+                    {weeklySunSat.map((cell) => {
+                      const pal = cell.mood ? MOOD_PALETTE.find((p) => p.id === cell.mood) : null;
+                      const hasMood = Boolean(cell.mood);
+                      return (
+                        <View key={cell.dateStr} style={styles.moodBentoWeekDay}>
+                          <View
+                            style={
+                              hasMood
+                                ? [
+                                    styles.moodBentoWeekCircle,
+                                    {
+                                      backgroundColor: pal?.color ?? 'transparent',
+                                      borderColor: pal?.border ?? Palette.border,
+                                    },
+                                  ]
+                                : [styles.moodBentoWeekCircle, styles.moodBentoWeekCircleEmpty]
+                            }
+                          />
+                          <Text style={styles.moodBentoWeekDayText} numberOfLines={1}>
+                            {t(`moodCheckin.${cell.labelKey}`)}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push('/core-settings')}
+                  accessibilityRole="button"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={[styles.moodBentoSettingsLink, rtlText]}>{t('moodCheckin.settingsLink')}</Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={styles.bentoRow}>
                 <TouchableOpacity
@@ -2153,6 +2320,143 @@ const styles = StyleSheet.create({
     width: 28,
     height: 1,
     backgroundColor: Palette.borderStrong,
+  },
+
+  bentoMoodCard: {
+    marginBottom: 12,
+    borderRadius: 24,
+    padding: 18,
+    backgroundColor: '#FFFCF9',
+    borderWidth: 1,
+    borderColor: Palette.border,
+    ...Shadow.soft,
+  },
+  bentoMoodTouchable: {
+    marginBottom: 4,
+  },
+  moodBentoStatus: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Palette.inkMuted,
+  },
+  moodBentoStatusOn: {
+    color: Palette.sage,
+  },
+  moodBentoWeekLabel: {
+    marginTop: 14,
+    marginBottom: 4,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: Palette.inkFaint,
+  },
+  moodBentoSpectrumCaption: {
+    marginBottom: 8,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    color: Palette.inkMuted,
+    opacity: 0.85,
+  },
+  moodBentoWeekStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 4,
+    direction: 'ltr',
+  },
+  moodBentoWeekDay: {
+    flex: 1,
+    alignItems: 'center',
+    maxWidth: 48,
+  },
+  moodBentoWeekCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    marginBottom: 4,
+  },
+  moodBentoWeekCircleEmpty: {
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+    borderColor: 'rgba(148, 163, 184, 0.35)',
+    borderWidth: 1.5,
+  },
+  moodBentoWeekDayText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: Palette.inkFaint,
+    textAlign: 'center',
+  },
+  moodBentoSettingsLink: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '700',
+    color: Palette.primaryDeep,
+    textDecorationLine: 'underline',
+  },
+  moodPickerHint: {
+    marginBottom: 10,
+    color: Palette.inkMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  moodSpectrumCaption: {
+    marginBottom: 14,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: Palette.inkFaint,
+  },
+  moodPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
+    alignItems: 'stretch',
+  },
+  moodPickerOption: {
+    flex: 1,
+    alignItems: 'center',
+    maxWidth: 88,
+  },
+  moodPickerLabel: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '700',
+    color: Palette.inkSoft,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  moodPickerTooltip: {
+    marginTop: 4,
+    fontSize: 9,
+    fontWeight: '500',
+    color: Palette.inkFaint,
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  moodPickerDotOuter: {
+    width: 54,
+    height: 54,
+    borderRadius: 14,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFCF9',
+    alignSelf: 'center',
+  },
+  moodPickerDotOuterSelected: {
+    ...Shadow.lift,
+    transform: [{ scale: 1.03 }],
+  },
+  moodPickerDotInner: {
+    width: '72%',
+    height: '72%',
+    borderRadius: 12,
   },
 
   // Status hero card (replaces traffic shell)

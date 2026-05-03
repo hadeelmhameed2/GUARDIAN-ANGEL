@@ -2,19 +2,21 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import '@/src/i18n';
+import i18n from '@/src/i18n';
+import { configureNotificationHandler } from '@/src/mood-checkin/notifications';
 
+configureNotificationHandler();
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
+function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { t, i18n } = useTranslation();
 
@@ -33,5 +35,13 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <I18nextProvider i18n={i18n}>
+      <RootLayoutNav />
+    </I18nextProvider>
   );
 }

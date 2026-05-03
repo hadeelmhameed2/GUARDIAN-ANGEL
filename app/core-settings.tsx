@@ -8,23 +8,31 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 
+import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { getEmergencyContact, saveEmergencyContact } from '@/src/emergency-contact';
+import { disableSafetyCheckinSchedules } from '@/src/mood-checkin/pipeline';
+import { getSafetySettings, saveSafetySettings } from '@/src/mood-checkin/storage';
 
 export default function CoreSettingsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
+  const { rtlText } = useRtlTextStyle();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [safetyCheckinEnabled, setSafetyCheckinEnabled] = useState(false);
+  const [presetSosMessage, setPresetSosMessage] = useState('');
+  const [isSavingSafety, setIsSavingSafety] = useState(false);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -41,9 +49,37 @@ export default function CoreSettingsScreen() {
         setName(data.name);
         setPhone(data.phone);
         setEmail(data.email);
+        const safety = await getSafetySettings();
+        setSafetyCheckinEnabled(safety.safetyCheckinEnabled);
+        setPresetSosMessage(safety.presetSosMessage);
       })();
     }, []),
   );
+
+  const onToggleAutomatedSos = async (value: boolean) => {
+    setSafetyCheckinEnabled(value);
+    try {
+      await saveSafetySettings({ safetyCheckinEnabled: value, presetSosMessage });
+      if (!value) {
+        await disableSafetyCheckinSchedules();
+      }
+    } catch {
+      setSafetyCheckinEnabled(!value);
+      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
+    }
+  };
+
+  const onSaveSafetyMessage = async () => {
+    setIsSavingSafety(true);
+    try {
+      await saveSafetySettings({ safetyCheckinEnabled, presetSosMessage });
+      Alert.alert(t('panic.settings.successTitle'), t('panic.settings.successMessage'));
+    } catch {
+      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
+    } finally {
+      setIsSavingSafety(false);
+    }
+  };
 
   const onSave = async () => {
     const nextName = name.trim();
@@ -114,6 +150,40 @@ export default function CoreSettingsScreen() {
               accessibilityRole="button">
               <Text style={styles.saveButtonText}>
                 {isSaving ? t('panic.settings.savingLabel') : t('panic.settings.saveLabel')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.safetySectionTitle}>{t('moodCheckin.settingsSectionTitle')}</Text>
+            <View style={styles.switchRow}>
+              <Text style={[styles.switchLabel, rtlText]}>{t('moodCheckin.settingsConsentLabel')}</Text>
+              <Switch
+                value={safetyCheckinEnabled}
+                onValueChange={(v) => void onToggleAutomatedSos(v)}
+                trackColor={{ false: '#d1d5db', true: '#86efac' }}
+                thumbColor={safetyCheckinEnabled ? '#15803d' : '#f4f4f5'}
+                accessibilityLabel={t('moodCheckin.settingsConsentLabel')}
+              />
+            </View>
+            <Text style={[styles.safetyExplainer, rtlText]}>{t('moodCheckin.settingsConsentExplainer')}</Text>
+            <Text style={styles.label}>{t('moodCheckin.presetSosMessageLabel')}</Text>
+            <TextInput
+              value={presetSosMessage}
+              onChangeText={setPresetSosMessage}
+              placeholder={t('moodCheckin.presetSosMessagePlaceholder')}
+              placeholderTextColor="#9ca3af"
+              style={[styles.input, styles.safetyMessageInput, rtlText]}
+              multiline
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.saveButton, isSavingSafety ? styles.saveButtonDisabled : null]}
+              onPress={() => void onSaveSafetyMessage()}
+              disabled={isSavingSafety}
+              accessibilityRole="button">
+              <Text style={styles.saveButtonText}>
+                {isSavingSafety ? t('panic.settings.savingLabel') : t('common.save')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -215,5 +285,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '800',
     fontSize: 14,
+  },
+  safetySectionTitle: {
+    color: '#2D3436',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  switchLabel: {
+    flex: 1,
+    flexShrink: 1,
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  safetyExplainer: {
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  safetyMessageInput: {
+    minHeight: 100,
+    marginBottom: 8,
   },
 });

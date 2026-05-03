@@ -92,11 +92,14 @@ if (!i18n.isInitialized) {
     },
     lng: 'en',
     fallbackLng: 'en',
+    defaultNS: 'translation',
     interpolation: {
       escapeValue: false,
     },
     compatibilityJSON: 'v4',
-    initImmediate: false,
+    react: {
+      useSuspense: false,
+    },
   });
 }
 
