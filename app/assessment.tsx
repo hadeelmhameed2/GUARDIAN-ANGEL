@@ -3,64 +3,65 @@ import React, { useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { getCurrentStatus, setCurrentStatus, statusFromScore, type RiskState } from './risk-status';
+import { getCurrentStatus, resolveAssessmentStatus, setCurrentStatus } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
-import { BranchTint, Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
+import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
+import { Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 
-type AnswerOption = {
-  key: 'never' | 'rarely' | 'sometimes' | 'often' | 'always';
-  points: number;
-};
+type RiskAnswerKey = 'never' | 'rarely' | 'often' | 'always';
+
+type QuestionCategory = 'screening' | 'critical';
 
 type Question = {
   id: string;
-  category: 'green' | 'yellow' | 'red';
+  category: QuestionCategory;
   textKey: string;
-  isPositive: boolean;
 };
 
 const QUESTIONS: Question[] = [
-  { id: 'g1', category: 'green', textKey: 'assessment.questions.g1', isPositive: true },
-  { id: 'g2', category: 'green', textKey: 'assessment.questions.g2', isPositive: true },
-  { id: 'g3', category: 'green', textKey: 'assessment.questions.g3', isPositive: true },
-  { id: 'y1', category: 'yellow', textKey: 'assessment.questions.y1', isPositive: false },
-  { id: 'y2', category: 'yellow', textKey: 'assessment.questions.y2', isPositive: false },
-  { id: 'y3', category: 'yellow', textKey: 'assessment.questions.y3', isPositive: false },
-  { id: 'r1', category: 'red', textKey: 'assessment.questions.r1', isPositive: false },
-  { id: 'r2', category: 'red', textKey: 'assessment.questions.r2', isPositive: false },
-  { id: 'r3', category: 'red', textKey: 'assessment.questions.r3', isPositive: false },
-  { id: 'r4', category: 'red', textKey: 'assessment.questions.r4', isPositive: false },
+  { id: 'q1', category: 'screening', textKey: 'assessment.questions.q1' },
+  { id: 'q2', category: 'screening', textKey: 'assessment.questions.q2' },
+  { id: 'q3', category: 'screening', textKey: 'assessment.questions.q3' },
+  { id: 'q4', category: 'screening', textKey: 'assessment.questions.q4' },
+  { id: 'q5', category: 'screening', textKey: 'assessment.questions.q5' },
+  { id: 'q6', category: 'screening', textKey: 'assessment.questions.q6' },
+  { id: 'q7', category: 'screening', textKey: 'assessment.questions.q7' },
+  { id: 'q8', category: 'screening', textKey: 'assessment.questions.q8' },
+  { id: 'q9', category: 'screening', textKey: 'assessment.questions.q9' },
+  { id: 'q10', category: 'screening', textKey: 'assessment.questions.q10' },
+  { id: 'c1', category: 'critical', textKey: 'assessment.questions.critical1' },
+  { id: 'c2', category: 'critical', textKey: 'assessment.questions.critical2' },
+  { id: 'c3', category: 'critical', textKey: 'assessment.questions.critical3' },
 ];
 
-const OPTIONS: AnswerOption[] = [
+const OPTIONS: { key: RiskAnswerKey; points: number }[] = [
   { key: 'never', points: 0 },
   { key: 'rarely', points: 1 },
-  { key: 'sometimes', points: 2 },
-  { key: 'often', points: 3 },
-  { key: 'always', points: 4 },
+  { key: 'often', points: 2 },
+  { key: 'always', points: 3 },
 ];
 
 const CATEGORY_THEME = {
-  green: { bg: Palette.sageSoft, color: Palette.statusGreenInk, emoji: '✿' },
-  yellow: { bg: Palette.goldSoft, color: Palette.statusYellowInk, emoji: '✧' },
-  red: { bg: Palette.roseSoft, color: Palette.statusRedInk, emoji: '❀' },
+  screening: { bg: Palette.goldSoft, color: Palette.statusYellowInk, emoji: '◆' },
+  critical: { bg: Palette.roseSoft, color: Palette.statusRedInk, emoji: '⚠️' },
 } as const;
 
 const PAGE_GRADIENTS = PageGradient;
-const BRANCH_TINT: Record<RiskState, string> = BranchTint;
 
-function scoreAnswer(key: AnswerOption['key'], isPositive: boolean) {
-  const basePoints = OPTIONS.find((option) => option.key === key)?.points ?? 0;
-  return isPositive ? 4 - basePoints : basePoints;
+/** Critical items: anything except Never escalates to red (zero-tolerance). */
+function criticalEscalates(key: RiskAnswerKey): boolean {
+  return key !== 'never';
 }
 
 export default function AssessmentScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
+  const { rtlText, rtlWriting } = useRtlTextStyle();
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [totalScore, setTotalScore] = useState(0);
+  const [mainScore, setMainScore] = useState(0);
+  const [criticalHighRisk, setCriticalHighRisk] = useState(false);
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -71,18 +72,28 @@ export default function AssessmentScreen() {
 
   const currentQuestion = QUESTIONS[questionIndex];
   const currentStatus = getCurrentStatus();
-  const progressLabel = useMemo(() => `${questionIndex + 1} / ${QUESTIONS.length}`, [questionIndex]);
-  const progressPercent = useMemo(() => ((questionIndex + 1) / QUESTIONS.length) * 100, [questionIndex]);
+  const totalSteps = QUESTIONS.length;
+  const progressLabel = useMemo(() => `${questionIndex + 1} / ${totalSteps}`, [questionIndex, totalSteps]);
+  const progressPercent = useMemo(() => ((questionIndex + 1) / totalSteps) * 100, [questionIndex, totalSteps]);
   const categoryTheme = CATEGORY_THEME[currentQuestion.category];
 
-  const handleAnswer = async (key: AnswerOption['key']) => {
-    const points = scoreAnswer(key, currentQuestion.isPositive);
-    const nextScore = totalScore + points;
-    const isFinal = questionIndex === QUESTIONS.length - 1;
+  const handleAnswer = async (key: RiskAnswerKey) => {
+    const option = OPTIONS.find((o) => o.key === key);
+    const points = option?.points ?? 0;
+    const isLast = questionIndex === QUESTIONS.length - 1;
 
-    if (isFinal) {
+    let nextMain = mainScore;
+    let nextCritical = criticalHighRisk;
+
+    if (currentQuestion.category === 'screening') {
+      nextMain = mainScore + points;
+    } else {
+      nextCritical = criticalHighRisk || criticalEscalates(key);
+    }
+
+    if (isLast) {
       try {
-        await setCurrentStatus(statusFromScore(nextScore));
+        await setCurrentStatus(resolveAssessmentStatus(nextMain, nextCritical));
       } catch {
         // Continue navigation even if persistence fails.
       }
@@ -90,7 +101,8 @@ export default function AssessmentScreen() {
       return;
     }
 
-    setTotalScore(nextScore);
+    setMainScore(nextMain);
+    setCriticalHighRisk(nextCritical);
     setQuestionIndex((prev) => prev + 1);
   };
 
@@ -105,7 +117,7 @@ export default function AssessmentScreen() {
         <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
           <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{t('assessment.title')}</Text>
+        <Text style={[styles.title, rtlWriting]}>{t('assessment.title')}</Text>
         <TouchableOpacity
           style={styles.headerIconButton}
           onPress={() => router.replace('/(tabs)')}
@@ -122,13 +134,13 @@ export default function AssessmentScreen() {
         <View style={styles.questionHeader}>
           <View style={[styles.categoryBadge, { backgroundColor: categoryTheme.bg }]}>
             <Text style={styles.categoryEmoji}>{categoryTheme.emoji}</Text>
-            <Text style={[styles.categoryText, { color: categoryTheme.color }]}>
+            <Text style={[styles.categoryText, { color: categoryTheme.color }, rtlText]}>
               {t(`assessment.categories.${currentQuestion.category}`)}
             </Text>
           </View>
-          <Text style={styles.progress}>{t('assessment.questionLabel', { value: progressLabel })}</Text>
+          <Text style={[styles.progress, rtlText]}>{t('assessment.questionLabel', { value: progressLabel })}</Text>
         </View>
-        <Text style={styles.body}>{t(currentQuestion.textKey)}</Text>
+        <Text style={[styles.body, rtlText]}>{t(currentQuestion.textKey)}</Text>
       </View>
 
       <View style={styles.optionsWrap}>
@@ -138,14 +150,16 @@ export default function AssessmentScreen() {
             style={styles.button}
             activeOpacity={0.75}
             onPress={() => void handleAnswer(option.key)}>
-            <Text style={styles.buttonText}>{t(`assessment.options.${option.key}`)}</Text>
+            <Text style={[styles.buttonText, rtlText]}>{t(`assessment.options.${option.key}`)}</Text>
             <Text style={{ fontSize: 18, color: Palette.primary, lineHeight: 18 }}>▶</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <View style={styles.footerWrap}>
-        <Text style={styles.footerText}>{t('assessment.footer')}</Text>
+        <Text style={[styles.footerText, rtlText]}>
+          {currentQuestion.category === 'critical' ? t('assessment.footerCritical') : t('assessment.footer')}
+        </Text>
       </View>
     </SafeAreaView>
     </LinearGradient>
@@ -244,10 +258,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Palette.ink,
     lineHeight: 30,
-    textAlign: 'left',
     fontFamily: Fonts.serif,
     fontWeight: '500',
-    writingDirection: 'ltr',
   },
   optionsWrap: {
     gap: 12,

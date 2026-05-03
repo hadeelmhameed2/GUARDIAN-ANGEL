@@ -27,6 +27,7 @@ import {
   type RiskState,
 } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
+import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { getPanicSettings, savePanicSettings } from '@/src/panic-settings';
 import {
@@ -82,6 +83,9 @@ const SAFETY_TIPS = [
   'homeScreen.safetyTips.tip2',
   'homeScreen.safetyTips.tip3',
   'homeScreen.safetyTips.tip4',
+  'homeScreen.safetyTips.tip5',
+  'homeScreen.safetyTips.tip6',
+  'homeScreen.safetyTips.tip7',
 ];
 
 const ASSESSMENT_HERO_BG: Record<RiskState, string> = {
@@ -117,6 +121,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
+  const { rtlText, rtlWriting } = useRtlTextStyle();
   useShakeHide({ onShake: () => router.replace('/(tabs)') });
   const [currentStatus, setStatus] = useState<RiskState>(getCurrentStatus());
   const [trustedContactName, setTrustedContactName] = useState('');
@@ -613,10 +618,10 @@ export default function HomeScreen() {
       <Modal visible={showEmergencyModal} transparent animationType="fade">
         <View style={styles.emergencyOverlay}>
           <View style={styles.emergencyContent}>
-            <Text style={styles.emergencyTitle}>{t('homeScreen.emergency.title')}</Text>
-            <Text style={styles.emergencyMessage}>{t('homeScreen.emergency.message')}</Text>
+            <Text style={[styles.emergencyTitle, rtlText]}>{t('homeScreen.emergency.title')}</Text>
+            <Text style={[styles.emergencyMessage, rtlText]}>{t('homeScreen.emergency.message')}</Text>
             <TouchableOpacity style={styles.emergencyButton} onPress={() => setShowEmergencyModal(false)}>
-              <Text style={styles.emergencyButtonText}>{t('homeScreen.emergency.understood')}</Text>
+              <Text style={[styles.emergencyButtonText, rtlWriting]}>{t('homeScreen.emergency.understood')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -624,40 +629,40 @@ export default function HomeScreen() {
       <Modal visible={showSupportModal} transparent animationType="fade" onRequestClose={() => setShowSupportModal(false)}>
         <View style={styles.supportOverlay}>
           <View style={styles.supportModal}>
-            <Text style={styles.supportModalTitle}>{t('homeScreen.support.title')}</Text>
+            <Text style={[styles.supportModalTitle, rtlText]}>{t('homeScreen.support.title')}</Text>
             <TouchableOpacity
               style={styles.supportActionButton}
               onPress={() => void openDialer('100', t('homeScreen.support.fallbackPolice'))}>
-              <Text style={styles.supportActionText}>🚨 {t('homeScreen.support.police')}</Text>
+              <Text style={[styles.supportActionText, rtlText]}>🚨 {t('homeScreen.support.police')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.supportActionButton}
               onPress={() => void openDialer('118', t('homeScreen.support.fallbackHotline'))}>
-              <Text style={styles.supportActionText}>🛡️ {t('homeScreen.support.hotline')}</Text>
+              <Text style={[styles.supportActionText, rtlText]}>🛡️ {t('homeScreen.support.hotline')}</Text>
             </TouchableOpacity>
             {trustedContacts.map((contact, index) => (
               <TouchableOpacity
                 key={`support-contact-${index}`}
                 style={styles.supportActionButton}
                 onPress={() => void openDialer(contact.phone, t('homeScreen.support.fallbackInvalidContact'))}>
-                <Text style={styles.supportActionText}>
+                <Text style={[styles.supportActionText, rtlText]}>
                   👤 {contact.name || t('homeScreen.support.customContact', { index: index + 1 })}
                 </Text>
               </TouchableOpacity>
             ))}
             {trustedContacts.length === 0 ? (
-              <Text style={styles.supportEmptyText}>{t('homeScreen.support.addContactsHint')}</Text>
+              <Text style={[styles.supportEmptyText, rtlText]}>{t('homeScreen.support.addContactsHint')}</Text>
             ) : null}
             <View style={styles.contactInputWrap}>
               <TextInput
-                style={styles.contactInput}
+                style={[styles.contactInput, rtlText]}
                 value={trustedContactName}
                 onChangeText={setTrustedContactName}
                 placeholder={t('homeScreen.support.trustedNamePlaceholder')}
                 placeholderTextColor="#9ca3af"
               />
               <TextInput
-                style={styles.contactInput}
+                style={[styles.contactInput, rtlText]}
                 value={trustedContactPhone}
                 onChangeText={setTrustedContactPhone}
                 placeholder={t('homeScreen.support.trustedPhonePlaceholder')}
@@ -665,7 +670,7 @@ export default function HomeScreen() {
                 keyboardType="phone-pad"
               />
               <TouchableOpacity style={styles.contactSaveButton} onPress={() => void saveTrustedContact()}>
-                <Text style={styles.contactSaveButtonText}>
+                <Text style={[styles.contactSaveButtonText, rtlText]}>
                   {trustedContacts.length > 0 ? t('homeScreen.support.addOrUpdate') : t('homeScreen.support.saveContact')}
                 </Text>
               </TouchableOpacity>
@@ -676,7 +681,7 @@ export default function HomeScreen() {
                       key={`modal-call-${index}`}
                       style={styles.removePill}
                       onPress={() => void openDialer(contact.phone, t('homeScreen.support.fallbackAddContact'))}>
-                      <Text style={styles.removePillText}>
+                      <Text style={[styles.removePillText, rtlText]}>
                         {t('homeScreen.support.callContact', {
                           name: contact.name || t('homeScreen.support.contact', { index: index + 1 }),
                         })}
@@ -688,14 +693,14 @@ export default function HomeScreen() {
                       key={`modal-remove-${index}`}
                       style={styles.removePill}
                       onPress={() => void removeTrustedContact(index)}>
-                      <Text style={styles.removePillText}>{t('homeScreen.support.removeContact', { index: index + 1 })}</Text>
+                      <Text style={[styles.removePillText, rtlText]}>{t('homeScreen.support.removeContact', { index: index + 1 })}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ) : null}
             </View>
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSupportModal(false)}>
-              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
+              <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -708,7 +713,7 @@ export default function HomeScreen() {
         <View style={styles.supportOverlay}>
           <View style={styles.safetyTipsModal}>
             <View style={styles.safetyTipsHeader}>
-              <Text style={styles.safetyTipsTitle}>{t('homeScreen.safetyTips.title')}</Text>
+              <Text style={[styles.safetyTipsTitle, rtlText]}>{t('homeScreen.safetyTips.title')}</Text>
               <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
                 <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
               </TouchableOpacity>
@@ -716,11 +721,11 @@ export default function HomeScreen() {
             {SAFETY_TIPS.map((tipKey) => (
               <View key={tipKey} style={styles.safetyTipRow}>
                 <Text style={styles.safetyTipIcon}>🛡️</Text>
-                <Text style={styles.safetyTipText}>{t(tipKey)}</Text>
+                <Text style={[styles.safetyTipText, rtlText]}>{t(tipKey)}</Text>
               </View>
             ))}
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowSafetyTipsModal(false)}>
-              <Text style={styles.supportCloseText}>{t('common.gotIt')}</Text>
+              <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.gotIt')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -732,10 +737,10 @@ export default function HomeScreen() {
         onRequestClose={() => setShowPanicSettingsModal(false)}>
         <View style={styles.supportOverlay}>
           <View style={styles.supportModal}>
-            <Text style={styles.supportModalTitle}>{t('panic.setup.title')}</Text>
-            <Text style={styles.supportEmptyText}>{t('panic.setup.subtitle')}</Text>
+            <Text style={[styles.supportModalTitle, rtlText]}>{t('panic.setup.title')}</Text>
+            <Text style={[styles.supportEmptyText, rtlText]}>{t('panic.setup.subtitle')}</Text>
             <TextInput
-              style={styles.contactInput}
+              style={[styles.contactInput, rtlText]}
               value={panicPhoneNumber}
               onChangeText={setPanicPhoneNumber}
               placeholder={t('panic.setup.phonePlaceholder')}
@@ -743,7 +748,7 @@ export default function HomeScreen() {
               keyboardType="phone-pad"
             />
             <TextInput
-              style={[styles.contactInput, styles.panicMessageInput]}
+              style={[styles.contactInput, styles.panicMessageInput, rtlText]}
               value={panicMessage}
               onChangeText={setPanicMessage}
               placeholder={t('panic.setup.messagePlaceholder')}
@@ -752,10 +757,10 @@ export default function HomeScreen() {
               textAlignVertical="top"
             />
             <TouchableOpacity style={styles.contactSaveButton} onPress={() => void savePanicSetup()}>
-              <Text style={styles.contactSaveButtonText}>{t('panic.setup.save')}</Text>
+              <Text style={[styles.contactSaveButtonText, rtlText]}>{t('panic.setup.save')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setShowPanicSettingsModal(false)}>
-              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
+              <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -769,7 +774,7 @@ export default function HomeScreen() {
           <View style={styles.journalImageViewerModal}>
             {journalViewerImage ? <Image source={{ uri: journalViewerImage }} style={styles.journalViewerImage} /> : null}
             <TouchableOpacity style={styles.supportCloseButton} onPress={() => setJournalViewerImage(null)}>
-              <Text style={styles.supportCloseText}>{t('common.close')}</Text>
+              <Text style={[styles.supportCloseText, rtlWriting]}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -781,26 +786,26 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.backButton} onPress={() => setShowJournalModal(false)}>
                 <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
               </TouchableOpacity>
-              <Text style={styles.journalPageTitle}>Journal</Text>
+              <Text style={[styles.journalPageTitle, rtlText]}>{t('homeScreen.journal.pageTitle')}</Text>
               <TouchableOpacity
                 style={[styles.journalExportButton, isExportingEvidence && styles.journalExportButtonDisabled]}
                 onPress={() => void exportEvidencePdf()}
                 disabled={isExportingEvidence}
                 accessibilityLabel="Export evidence PDF">
                 <Text style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 14 }}>📄</Text>
-                <Text style={styles.journalExportButtonText}>
-                  {isExportingEvidence ? 'Exporting…' : 'Export'}
+                <Text style={[styles.journalExportButtonText, rtlText]}>
+                  {isExportingEvidence ? t('homeScreen.journal.exporting') : t('homeScreen.journal.export')}
                 </Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.journalSubtitle}>
-              Privately record incidents with date, time, photos, and voice notes. Each entry is hash-chained so any later edit invalidates the chain.
+            <Text style={[styles.journalSubtitle, rtlText]}>
+              {t('homeScreen.journal.subtitle')}
             </Text>
             <TextInput
-              style={styles.journalTextarea}
+              style={[styles.journalTextarea, rtlText]}
               value={incidentDescription}
               onChangeText={setIncidentDescription}
-              placeholder="Describe what happened..."
+              placeholder={t('homeScreen.journal.placeholder')}
               placeholderTextColor={Palette.inkFaint}
               multiline
               textAlignVertical="top"
@@ -817,7 +822,7 @@ export default function HomeScreen() {
             <View style={styles.journalAttachRow}>
               <TouchableOpacity style={styles.journalAttachButton} onPress={openImagePicker}>
                 <Text style={{ fontSize: 15, color: Palette.primaryDeep, lineHeight: 15 }}>🖼️</Text>
-                <Text style={styles.journalAttachButtonText}>Add image</Text>
+                <Text style={[styles.journalAttachButtonText, rtlText]}>{t('homeScreen.journal.addImage')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.journalAttachButton, isRecordingAudio && styles.journalAttachButtonRecording]}
@@ -834,20 +839,23 @@ export default function HomeScreen() {
                   style={[
                     styles.journalAttachButtonText,
                     isRecordingAudio && styles.journalAttachButtonTextRecording,
+                    rtlText,
                   ]}>
-                  {isRecordingAudio ? `Stop · ${formatRecordingDuration(recordingSeconds)}` : 'Record audio'}
+                  {isRecordingAudio
+                    ? t('homeScreen.journal.stopWithTime', { time: formatRecordingDuration(recordingSeconds) })
+                    : t('homeScreen.journal.recordAudio')}
                 </Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.journalSaveButton} onPress={() => void saveJournalEntry()}>
               <Text style={{ fontSize: 15, color: '#FFFFFF', lineHeight: 15 }}>✓</Text>
-              <Text style={styles.journalSaveButtonText}>Save entry</Text>
+              <Text style={[styles.journalSaveButtonText, rtlText]}>{t('homeScreen.journal.saveEntry')}</Text>
             </TouchableOpacity>
             {selectedJournalImage ? (
               <View style={styles.journalSelectedImageRow}>
                 <Image source={{ uri: selectedJournalImage }} style={styles.journalSelectedImage} />
                 <Text style={styles.journalSelectedImageLabel} numberOfLines={1}>
-                  {selectedJournalImageName || 'Selected image'}
+                  {selectedJournalImageName || t('homeScreen.journal.selectedImage')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -874,8 +882,8 @@ export default function HomeScreen() {
                         style: { width: '100%' },
                       })
                     : (
-                      <Text style={styles.journalSelectedImageLabel}>
-                        Recording · {formatRecordingDuration(selectedJournalAudioDuration)}
+                      <Text style={[styles.journalSelectedImageLabel, rtlText]}>
+                        {t('homeScreen.journal.recordingProgress', { time: formatRecordingDuration(selectedJournalAudioDuration) })}
                       </Text>
                     )}
                 </View>
@@ -885,14 +893,14 @@ export default function HomeScreen() {
               </View>
             ) : null}
             <TouchableOpacity style={styles.journalClearAllButton} onPress={clearAllJournalEntries}>
-              <Text style={styles.journalClearAllButtonText}>Clear All Entries</Text>
+              <Text style={[styles.journalClearAllButtonText, rtlText]}>{t('homeScreen.journal.clearAll')}</Text>
             </TouchableOpacity>
 
             <View style={styles.journalFeed}>
               {journalEntries.map((entry) => (
                 <View key={entry.id} style={styles.journalEntryCard}>
-                  <Text style={styles.journalEntryTimestamp}>{entry.timestamp}</Text>
-                  {entry.description ? <Text style={styles.journalEntryText}>{entry.description}</Text> : null}
+                  <Text style={[styles.journalEntryTimestamp, rtlText]}>{entry.timestamp}</Text>
+                  {entry.description ? <Text style={[styles.journalEntryText, rtlText]}>{entry.description}</Text> : null}
                   {entry.imageBase64 ? (
                     <TouchableOpacity onPress={() => setJournalViewerImage(entry.imageBase64 ?? null)}>
                       <Image source={{ uri: entry.imageBase64 }} style={styles.journalThumb} />
@@ -906,8 +914,8 @@ export default function HomeScreen() {
                       })
                     : entry.audioBase64
                       ? (
-                        <Text style={styles.journalEntryAudioFallback}>
-                          🎤 Audio recording attached ({entry.audioDurationSec ?? 0}s)
+                        <Text style={[styles.journalEntryAudioFallback, rtlText]}>
+                          {t('homeScreen.journal.audioAttached', { seconds: entry.audioDurationSec ?? 0 })}
                         </Text>
                       )
                       : null}
@@ -920,7 +928,7 @@ export default function HomeScreen() {
                     </View>
                   ) : null}
                   <TouchableOpacity style={styles.journalDeleteButton} onPress={() => void deleteJournalEntry(entry.id)}>
-                    <Text style={styles.journalDeleteButtonText}>Delete</Text>
+                    <Text style={[styles.journalDeleteButtonText, rtlText]}>{t('homeScreen.journal.delete')}</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -944,8 +952,8 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.welcomeBlock}>
-              <Text style={styles.welcomeEyebrow}>{t('homeScreen.safeZone')}</Text>
-              <Text style={styles.welcomeTitle}>You are{'\n'}held here.</Text>
+              <Text style={[styles.welcomeEyebrow, rtlWriting]}>{t('homeScreen.safeZone')}</Text>
+              <Text style={[styles.welcomeTitle, rtlWriting]}>{t('homeScreen.welcomeHeld')}</Text>
               <View style={styles.welcomeOrnament}>
                 <View style={styles.welcomeOrnamentLine} />
                 <Text style={{ fontSize: 11, color: Palette.primary, lineHeight: 11 }}>❤️</Text>
@@ -966,10 +974,10 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.statusTextWrap}>
                   <View style={[styles.statusPill, { backgroundColor: headerScenario.pillBg }]}>
-                    <Text style={styles.statusPillText}>{t(headerScenario.pillTextKey)}</Text>
+                    <Text style={[styles.statusPillText, rtlText]}>{t(headerScenario.pillTextKey)}</Text>
                   </View>
-                  <Text style={styles.statusMessage}>{t(headerScenario.titleKey)}</Text>
-                  <Text style={styles.statusSubMessage}>{t(headerScenario.descriptionKey)}</Text>
+                  <Text style={[styles.statusMessage, rtlText]}>{t(headerScenario.titleKey)}</Text>
+                  <Text style={[styles.statusSubMessage, rtlText]}>{t(headerScenario.descriptionKey)}</Text>
                 </View>
               </View>
               <View style={styles.statusDivider}>
@@ -977,11 +985,11 @@ export default function HomeScreen() {
                 <Text style={styles.statusDividerOrnament}>✿</Text>
                 <View style={styles.statusDividerLine} />
               </View>
-              <Text style={styles.statusAffirmation}>&ldquo;{t(heartAffirmationKey)}&rdquo;</Text>
+              <Text style={[styles.statusAffirmation, rtlText]}>&ldquo;{t(heartAffirmationKey)}&rdquo;</Text>
             </LinearGradient>
 
             <View style={styles.bentoSection}>
-              <Text style={styles.sectionLabel}>{t('homeScreen.actions.subheader')}</Text>
+              <Text style={[styles.sectionLabel, rtlText]}>{t('homeScreen.actions.subheader')}</Text>
 
               <View style={styles.bentoRow}>
                 <TouchableOpacity
@@ -990,8 +998,8 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>🛡️</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.securityTipsTitle')}</Text>
-                  <Text style={styles.bentoCardDescription} numberOfLines={3}>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.securityTipsTitle')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]} numberOfLines={3}>
                     {t('homeScreen.actions.securityTipsDescription')}
                   </Text>
                 </TouchableOpacity>
@@ -1002,12 +1010,12 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>📋</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
-                  <Text style={styles.bentoCardDescription} numberOfLines={3}>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]} numberOfLines={3}>
                     {t('homeScreen.actions.startAssessmentDescription')}
                   </Text>
                   <View style={styles.bentoCardCTA}>
-                    <Text style={styles.bentoCardCTAText}>{t('homeScreen.actions.startQuiz')}</Text>
+                    <Text style={[styles.bentoCardCTAText, rtlText]}>{t('homeScreen.actions.startQuiz')}</Text>
                     <Text style={{ fontSize: 13, color: '#FFFFFF', lineHeight: 13 }}>→</Text>
                   </View>
                 </TouchableOpacity>
@@ -1020,8 +1028,8 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.surfaceTinted }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>📞</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>{t('homeScreen.support.title')}</Text>
-                  <Text style={styles.bentoCardDescription}>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.support.title')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]}>
                     {t('homeScreen.actions.talkToSomeoneDescription')}
                   </Text>
                 </TouchableOpacity>
@@ -1031,8 +1039,8 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.goldSoft }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>🏠</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.shelters')}</Text>
-                  <Text style={styles.bentoCardDescription}>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.shelters')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]}>
                     {t('homeScreen.actions.sheltersDescription')}
                   </Text>
                 </TouchableOpacity>
@@ -1048,8 +1056,8 @@ export default function HomeScreen() {
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>⚠️</Text>
                   </View>
                   <View style={styles.bentoEmergencyTextWrap}>
-                    <Text style={styles.bentoEmergencyTitle}>{t('panic.triggerTitle')}</Text>
-                    <Text style={styles.bentoEmergencyDescription}>
+                    <Text style={[styles.bentoEmergencyTitle, rtlText]}>{t('panic.triggerTitle')}</Text>
+                    <Text style={[styles.bentoEmergencyDescription, rtlText]}>
                       {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
                     </Text>
                   </View>
@@ -1059,7 +1067,7 @@ export default function HomeScreen() {
                   style={styles.bentoEmergencySetup}
                   onPress={() => setShowPanicSettingsModal(true)}>
                   <Text style={{ fontSize: 11, color: '#FFFFFF', lineHeight: 11 }}>⚙️</Text>
-                  <Text style={styles.bentoEmergencySetupText}>{t('panic.setup.open')}</Text>
+                  <Text style={[styles.bentoEmergencySetupText, rtlText]}>{t('panic.setup.open')}</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
 
@@ -1070,8 +1078,8 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>🔒</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>{t('homeScreen.actions.secureResources')}</Text>
-                  <Text style={styles.bentoCardDescription}>
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.secureResources')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]}>
                     {t('homeScreen.actions.secureResourcesDescription')}
                   </Text>
                 </TouchableOpacity>
@@ -1081,9 +1089,9 @@ export default function HomeScreen() {
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
                     <Text style={{ fontSize: 24, lineHeight: 24 }}>📖</Text>
                   </View>
-                  <Text style={styles.bentoCardTitle}>Journal</Text>
-                  <Text style={styles.bentoCardDescription}>
-                    Document incidents and keep personal notes.
+                  <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.journalTitle')}</Text>
+                  <Text style={[styles.bentoCardDescription, rtlText]}>
+                    {t('homeScreen.actions.journalDescription')}
                   </Text>
                 </TouchableOpacity>
               </View>

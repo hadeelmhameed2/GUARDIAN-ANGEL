@@ -26,33 +26,55 @@
     "title": "Status Assessment",
     "questionLabel": "Question {{value}}",
     "footer": "Your answers are private and secure",
+    "footerCritical": "Critical risk: any answer other than Never sets status to high risk immediately.",
     "categories": {
       "green": "Green",
       "yellow": "Yellow",
-      "red": "Red"
+      "red": "Red",
+      "screening": "Relationship patterns",
+      "critical": "Critical risk"
     },
     "options": {
       "never": "Never",
       "rarely": "Rarely",
-      "sometimes": "Sometimes",
       "often": "Often",
       "always": "Always"
     },
     "questions": {
-      "g1": "Do you feel free to see friends/family without fear?",
-      "g2": "Does your partner support your success?",
-      "g3": "Do you have an equal voice in decisions?",
-      "y1": "Does your partner monitor your phone/messages?",
-      "y2": "Do you experience constant criticism or humiliation?",
-      "y3": "Is there a Love Bombing cycle?",
-      "r1": "Do you live in constant fear/alertness at home?",
-      "r2": "Has your partner threatened harm to you or others?",
-      "r3": "Are you denied access to your own money?",
-      "r4": "Are you prevented from work, school, or medical care?"
+      "q1": "Does your partner expect you to be available 24/7 and demand detailed explanations if you don't answer immediately?",
+      "q2": "Do you feel your partner is trying to isolate you from friends or family?",
+      "q3": "Do you feel like you are 'walking on eggshells' to avoid an explosion or anger from your partner?",
+      "q4": "Does your partner restrict your access to money or demand an account of every small expense?",
+      "q5": "Does your partner define extreme jealousy or possessiveness as an expression of love?",
+      "q6": "Does your partner tend to belittle you, insult you, or make you feel worthless?",
+      "q7": "Do you feel like you always become the 'guilty one' in every argument, even when it's not true?",
+      "q8": "Are there topics you avoid bringing up because of fear of a violent or extreme reaction?",
+      "q9": "Does your partner dismiss your feelings or claim you are 'too sensitive' when you express pain?",
+      "q10": "Do you feel like you have no one to turn to and must hide the reality of your relationship from others?",
+      "critical1": "Has there been an increase in the frequency or severity of violence recently?",
+      "critical2": "Has your partner ever threatened to kill you, themselves, or others if you leave?",
+      "critical3": "Has your partner ever tried to choke you, or do they have access to a weapon?"
     }
   },
   "homeScreen": {
     "safeZone": "Safe Zone",
+    "welcomeHeld": "You are\nsafe here.",
+    "journal": {
+      "pageTitle": "Journal",
+      "subtitle": "Privately record incidents with date, time, photos, and voice notes. Each entry is hash-chained so any later edit invalidates the chain.",
+      "export": "Export",
+      "exporting": "Exporting…",
+      "addImage": "Add image",
+      "recordAudio": "Record audio",
+      "stopWithTime": "Stop · {{time}}",
+      "recordingProgress": "Recording · {{time}}",
+      "saveEntry": "Save entry",
+      "selectedImage": "Selected image",
+      "clearAll": "Clear All Entries",
+      "delete": "Delete",
+      "placeholder": "Describe what happened...",
+      "audioAttached": "🎤 Audio recording attached ({{seconds}}s)"
+    },
     "emergency": {
       "title": "EMERGENCY PROTOCOL ACTIVATED",
       "message": "Safety measures are now in progress.",
@@ -105,7 +127,10 @@
       "tip1": "Trust your intuition: If something feels off, it usually is.",
       "tip2": "Digital Privacy: Use incognito mode for sensitive searches.",
       "tip3": "Emergency Code: Set a 'safe word' with your trusted contact.",
-      "tip4": "Location Safety: Keep your GPS off when it's not strictly necessary."
+      "tip4": "Location Safety: Keep your GPS off when it's not strictly necessary.",
+      "tip5": "Early Pattern Identification: Pay attention to repetitive argument patterns. If you're only \"pleasing\" to keep the peace, it's a warning sign.",
+      "tip6": "Discreet Consultation: Consulting a social worker or counselor is for gaining tools and maintaining safety, not just for ending a relationship.",
+      "tip7": "Emotional Documentation: Use the hidden diary to document your feelings, not just events. It helps track if the situation is improving or worsening."
     },
     "actions": {
       "subheader": "What you can do",
@@ -118,7 +143,9 @@
       "shelters": "Shelters",
       "sheltersDescription": "Prepare steps for when you need to leave.",
       "secureResources": "Secure resources",
-      "secureResourcesDescription": "Safely save money or important documents."
+      "secureResourcesDescription": "Safely save money or important documents.",
+      "journalTitle": "Journal",
+      "journalDescription": "Document incidents and keep personal notes."
     }
   },
   "panic": {

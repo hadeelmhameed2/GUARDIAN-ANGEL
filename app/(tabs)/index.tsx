@@ -17,6 +17,9 @@ import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch } from '@/src/api';
 import { readSecureItem, writeSecureItem } from '@/src/secure-storage';
 
+/** Set to `false` before production to restore real `/api/auth` login & registration. */
+const BYPASS_SERVER_AUTH = true;
+
 const BUTTONS: Array<Array<string>> = [
   ['AC', '+/-', '%', '/'],
   ['7', '8', '9', '*'],
@@ -124,6 +127,18 @@ export default function CalculatorMaskScreen() {
 
     setIsSubmitting(true);
     try {
+      if (BYPASS_SERVER_AUTH) {
+        const localToken = `local-dev-${Date.now()}`;
+        await saveSession(localToken, nextPassword);
+        await writeSecureItem('ga_auth_username', nextUsername);
+        const unlocked = await unlockSecureDataWithPin(nextPassword);
+        if (unlocked) {
+          setShowAuthPanel(false);
+          router.replace('/home');
+        }
+        return;
+      }
+
       const response = await apiFetch(`/api/auth/${mode}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

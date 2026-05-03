@@ -29,7 +29,7 @@ const EXIT_FUND_TRANSACTIONS_KEY = 'exit_fund_transactions';
 const EMERGENCY_ACTIVE_KEY = 'is_emergency_active';
 const TRUSTED_CONTACTS_KEY = 'trusted_contacts';
 
-let currentStatus: RiskState = 'yellow';
+let currentStatus: RiskState = 'green';
 let isSecureSessionUnlocked = false;
 let exitFundBalance = 0;
 let mainAccountBalance = 12500;
@@ -96,10 +96,17 @@ export async function setCurrentStatus(next: RiskState) {
   }
 }
 
+/** Maps total score from the 10 main assessment questions (max 30). */
 export function statusFromScore(score: number): RiskState {
   if (score <= 7) return 'green';
-  if (score <= 22) return 'yellow';
+  if (score <= 18) return 'yellow';
   return 'red';
+}
+
+/** Final status: any critical answer other than “never” forces red (zero-tolerance). */
+export function resolveAssessmentStatus(mainScore: number, criticalHighRisk: boolean): RiskState {
+  if (criticalHighRisk) return 'red';
+  return statusFromScore(mainScore);
 }
 
 export function hasSecureSessionAccess() {
