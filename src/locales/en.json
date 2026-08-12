@@ -111,6 +111,7 @@
       "clearAll": "Clear All Entries",
       "delete": "Delete",
       "placeholder": "Describe what happened...",
+      "generateAiDescription": "Generate AI Description",
       "generatingDescription": "Analyzing image for a factual description…",
       "captionErrorNoToken": "Sign in with your calculator PIN to enable AI captioning.",
       "captionErrorUnauthorized": "Session expired. Lock and unlock the app with your PIN, then try again.",

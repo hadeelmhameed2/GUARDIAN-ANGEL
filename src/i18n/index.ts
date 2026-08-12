@@ -109,6 +109,18 @@ async function applyPreferredLanguage() {
   await i18n.changeLanguage(language);
 }
 
+export function normalizeAppLanguage(language?: string | null): AppLanguage {
+  const code = language?.trim().toLowerCase().split('-')[0];
+  if (code === 'he' || code === 'ar' || code === 'en') return code;
+  return 'en';
+}
+
+/** Current UI language from i18next (preferred over reading i18n in non-React modules). */
+export function getCurrentAppLanguage(): AppLanguage {
+  const resolved = i18n.resolvedLanguage ?? i18n.language;
+  return normalizeAppLanguage(resolved);
+}
+
 export async function setAppLanguage(language: AppLanguage) {
   await syncRTL(language);
   await i18n.changeLanguage(language);

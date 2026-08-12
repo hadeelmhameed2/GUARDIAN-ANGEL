@@ -111,6 +111,7 @@
       "clearAll": "مسح كل المدخلات",
       "delete": "حذف",
       "placeholder": "صفِ ما حدث...",
+      "generateAiDescription": "إنشاء وصف بالذكاء الاصطناعي",
       "generatingDescription": "جارٍ تحليل الصورة لوصف واقعي…",
       "captionErrorNoToken": "سجّلي الدخول برمز الآلة الحاسبة لتفعيل التسمية التوضيحية بالذكاء الاصطناعي.",
       "captionErrorUnauthorized": "انتهت الجلسة. أغلقي التطبيق وافتحيه برمزك، ثم حاولي مجددًا.",

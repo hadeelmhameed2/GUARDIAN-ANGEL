@@ -7,14 +7,32 @@ export type SessionPayload = {
 
 const encoder = new TextEncoder();
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
 function toBase64Url(input: string): string {
-  return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return bytesToBase64(encoder.encode(input)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function fromBase64Url(input: string): string {
   const padded = input + "=".repeat((4 - (input.length % 4)) % 4);
   const base64 = padded.replace(/-/g, "+").replace(/_/g, "/");
-  return atob(base64);
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export function getBearerToken(request: Request): string | null {
+  const authHeader = request.headers.get("authorization")?.trim();
+  if (!authHeader) return null;
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1]?.trim();
+  return token || null;
 }
 
 async function signHmacSha256(data: string, secret: string): Promise<string> {
@@ -26,7 +44,7 @@ async function signHmacSha256(data: string, secret: string): Promise<string> {
     ["sign"]
   );
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
-  return toBase64Url(String.fromCharCode(...new Uint8Array(signature)));
+  return bytesToBase64(new Uint8Array(signature)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 export async function createToken(
@@ -47,7 +65,8 @@ export async function createToken(
 }
 
 export async function verifyToken(token: string, secret: string): Promise<SessionPayload | null> {
-  const parts = token.split(".");
+  const normalized = token.trim().replace(/^Bearer\s+/i, "");
+  const parts = normalized.split(".");
   if (parts.length !== 3) return null;
 
   const [header, payload, signature] = parts;
@@ -55,9 +74,15 @@ export async function verifyToken(token: string, secret: string): Promise<Sessio
   const expectedSignature = await signHmacSha256(data, secret);
   if (signature !== expectedSignature) return null;
 
-  const parsed = JSON.parse(fromBase64Url(payload)) as SessionPayload;
+  let parsed: SessionPayload;
+  try {
+    parsed = JSON.parse(fromBase64Url(payload)) as SessionPayload;
+  } catch {
+    return null;
+  }
+
   if (!parsed.exp || parsed.exp < Math.floor(Date.now() / 1000)) return null;
-  if (!parsed.userId || !parsed.username || !parsed.calculatorCode) return null;
+  if (parsed.userId == null || !parsed.username || !parsed.calculatorCode) return null;
   return parsed;
 }
 

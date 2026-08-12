@@ -111,6 +111,7 @@
       "clearAll": "מחיקת כל הרשומות",
       "delete": "מחק",
       "placeholder": "תארי מה קרה...",
+      "generateAiDescription": "צור תיאור באמצעות AI",
       "generatingDescription": "מנתחת את התמונה לתיאור עובדתי…",
       "captionErrorNoToken": "התחברי עם קוד המחשבון כדי להפעיל תיאור AI.",
       "captionErrorUnauthorized": "ההתחברות פגה. נעלי ופתחי שוב עם הקוד, ואז נסי שוב.",

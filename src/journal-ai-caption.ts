@@ -1,5 +1,5 @@
-import { apiFetch } from '@/src/api';
-import { AUTH_TOKEN_KEY, readSecureItem } from '@/src/secure-storage';
+import { authFetch } from '@/src/auth-session';
+import { getCurrentAppLanguage, normalizeAppLanguage, type AppLanguage } from '@/src/i18n';
 
 const MAX_API_IMAGE_BYTES = 1_500_000;
 const LOG_PREFIX = '[journal-ai-caption]';
@@ -14,7 +14,7 @@ export type DescribeImageFailureReason =
   | 'misconfigured';
 
 export type DescribeImageResult =
-  | { ok: true; description: string }
+  | { ok: true; description: string; language: AppLanguage }
   | { ok: false; reason: DescribeImageFailureReason; message: string; status?: number };
 
 function estimateBase64Bytes(dataUrlOrBase64: string): number {
@@ -38,54 +38,65 @@ function mapFailureReason(status: number, errorMessage?: string): DescribeImageF
   return 'server';
 }
 
+function resolveCaptionLanguage(language?: string | null): AppLanguage {
+  if (language?.trim()) {
+    return normalizeAppLanguage(language);
+  }
+  return getCurrentAppLanguage();
+}
+
 /**
  * Requests a factual AI caption for a journal image. API keys stay on the server.
+ * Call explicitly from UI (e.g. a "Generate AI Description" button) — not on image pick.
  * Returns structured errors so the UI can fall back to manual entry.
  */
-export async function describeJournalImage(imageBase64: string): Promise<DescribeImageResult> {
+export async function describeJournalImage(
+  imageBase64: string,
+  language?: string | null,
+): Promise<DescribeImageResult> {
   if (estimateBase64Bytes(imageBase64) > MAX_API_IMAGE_BYTES) {
     return { ok: false, reason: 'too_large', message: 'Image exceeds the 1.5 MB client upload limit' };
   }
 
-  const token = await readSecureItem(AUTH_TOKEN_KEY);
-  if (!token || token.startsWith('local-dev-')) {
-    console.warn(LOG_PREFIX, 'Skipped: no server auth token (register or log in first)');
-    return { ok: false, reason: 'no_token', message: 'Sign in with your calculator PIN to use AI captioning' };
-  }
-
   const payloadBase64 = stripDataUrl(imageBase64);
   const contentType = extractContentType(imageBase64);
+  const captionLanguage = resolveCaptionLanguage(language);
+
+  console.info(LOG_PREFIX, 'Requesting caption', { language: captionLanguage });
 
   try {
-    const response = await apiFetch('/api/ai/describe-image', {
+    const response = await authFetch('/api/ai/describe-image', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         imageBase64: payloadBase64,
         contentType,
+        language: captionLanguage,
       }),
     });
 
-    let body: { description?: string; error?: string } = {};
+    let body: { description?: string; error?: string; language?: string } = {};
     try {
-      body = (await response.json()) as { description?: string; error?: string };
+      body = (await response.json()) as { description?: string; error?: string; language?: string };
     } catch {
       body = { error: 'Non-JSON response from server' };
     }
 
     if (!response.ok) {
       const message = body.error?.trim() || `Request failed (${response.status})`;
-      const reason = mapFailureReason(response.status, message);
+      const reason =
+        response.status === 401 && message === 'Not authenticated'
+          ? 'no_token'
+          : mapFailureReason(response.status, message);
       console.warn(LOG_PREFIX, 'API error', {
         status: response.status,
         reason,
         message,
+        requestedLanguage: captionLanguage,
         contentType,
         imageBytes: estimateBase64Bytes(payloadBase64),
-        tokenPrefix: `${token.slice(0, 8)}…`,
       });
       return { ok: false, reason, message, status: response.status };
     }
@@ -96,8 +107,13 @@ export async function describeJournalImage(imageBase64: string): Promise<Describ
       return { ok: false, reason: 'empty', message: 'AI returned an empty description' };
     }
 
-    console.info(LOG_PREFIX, 'Caption generated', { length: description.length });
-    return { ok: true, description };
+    const responseLanguage = normalizeAppLanguage(body.language ?? captionLanguage);
+    console.info(LOG_PREFIX, 'Caption generated', {
+      length: description.length,
+      requestedLanguage: captionLanguage,
+      responseLanguage,
+    });
+    return { ok: true, description, language: responseLanguage };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Network request failed';
     console.warn(LOG_PREFIX, 'Network failure', { message, error });

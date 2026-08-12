@@ -1,4 +1,4 @@
-import { verifyToken } from "../../_lib/auth";
+import { getBearerToken, verifyToken } from "../../_lib/auth";
 import { stripDataUrlPrefix } from "../../_lib/base64";
 import { requireJwtEnv, requireVisionEnv } from "../../_lib/env";
 import { badRequest, json, methodNotAllowed, unauthorized } from "../../_lib/http";
@@ -15,15 +15,8 @@ type Env = {
 type DescribeBody = {
   imageBase64?: string;
   contentType?: string;
+  language?: string;
 };
-
-function getBearerToken(request: Request): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return null;
-  const [type, token] = authHeader.split(" ");
-  if (type?.toLowerCase() !== "bearer" || !token) return null;
-  return token;
-}
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const jwtEnvError = requireJwtEnv(context.env);
@@ -42,7 +35,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const message = error instanceof Error ? error.message : "Token verification failed";
     return json({ error: message }, 500);
   }
-  if (!session) return unauthorized("Invalid token");
+  if (!session) return unauthorized("Invalid or expired token");
 
   let body: DescribeBody;
   try {
@@ -58,10 +51,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const stripped = stripDataUrlPrefix(rawImage);
   const contentType = body.contentType?.trim() || stripped.contentType || "image/jpeg";
+  const language = body.language?.trim() || "en";
 
   try {
-    const description = await describeEvidenceImage(context.env, stripped.base64, contentType);
-    return json({ description });
+    const result = await describeEvidenceImage(
+      context.env,
+      stripped.base64,
+      contentType,
+      language,
+    );
+    return json({ description: result.description, language: result.language });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Vision request failed";
     if (message.includes("2 MB")) {

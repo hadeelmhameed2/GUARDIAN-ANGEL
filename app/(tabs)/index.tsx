@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch, isApiConfigured } from '@/src/api';
+import { refreshAuthSession } from '@/src/auth-session';
 import {
   AUTH_TOKEN_KEY,
   AUTH_CALCULATOR_CODE_KEY,
@@ -251,6 +252,9 @@ export default function CalculatorMaskScreen() {
 
     if (hasToken && personalCode && isFourDigitPin(currentExpression)) {
       if (currentExpression === personalCode) {
+        if (isApiConfigured() && !BYPASS_SERVER_AUTH) {
+          await refreshAuthSession();
+        }
         const unlocked = await unlockSecureDataWithPin(currentExpression);
         if (unlocked) {
           setExpression('');

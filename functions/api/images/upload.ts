@@ -1,4 +1,4 @@
-import { verifyToken } from "../../_lib/auth";
+import { getBearerToken, verifyToken } from "../../_lib/auth";
 import { badRequest, json, methodNotAllowed, unauthorized } from "../../_lib/http";
 
 type Env = {
@@ -20,14 +20,6 @@ function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
-}
-
-function getBearerToken(request: Request): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return null;
-  const [type, token] = authHeader.split(" ");
-  if (type?.toLowerCase() !== "bearer" || !token) return null;
-  return token;
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {

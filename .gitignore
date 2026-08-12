@@ -45,3 +45,4 @@ app-example
 
 *.zip
 .expo/.env
+.env

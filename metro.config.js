@@ -12,6 +12,12 @@ config.server.enhanceMiddleware = (middleware) => {
     target: API_TARGET,
     changeOrigin: true,
     secure: true,
+    onProxyReq: (proxyReq, req) => {
+      const authorization = req.headers.authorization;
+      if (authorization) {
+        proxyReq.setHeader('Authorization', authorization);
+      }
+    },
   });
 
   return (req, res, next) => {

@@ -272,15 +272,24 @@ export default function HomeScreen() {
     return true;
   };
 
-  const handleJournalImageSelected = async (base64: string, name: string) => {
+  const handleJournalImageSelected = (base64: string, name: string) => {
     setSelectedJournalImage(base64);
     setSelectedJournalImageName(name);
+    setCaptionError(null);
+  };
+
+  const generateAiCaption = async () => {
+    if (!selectedJournalImage || isGeneratingDescription) return;
+
     setCaptionError(null);
     const requestId = captionRequestRef.current + 1;
     captionRequestRef.current = requestId;
     setIsGeneratingDescription(true);
     try {
-      const result = await describeJournalImage(base64);
+      const result = await describeJournalImage(
+        selectedJournalImage,
+        i18n.resolvedLanguage ?? i18n.language,
+      );
       if (captionRequestRef.current !== requestId) return;
       if (result.ok) {
         setIncidentDescription((prev) => appendJournalCaption(prev, result.description));
@@ -302,7 +311,7 @@ export default function HomeScreen() {
     void (async () => {
       const picked = await pickJournalImageNative();
       if (picked) {
-        await handleJournalImageSelected(picked.base64, picked.name);
+        handleJournalImageSelected(picked.base64, picked.name);
       }
     })();
   };
@@ -347,7 +356,7 @@ export default function HomeScreen() {
     if (!file) return;
     try {
       const compressedImage = await compressImageToDataUrl(file);
-      await handleJournalImageSelected(compressedImage, file.name || 'image');
+      handleJournalImageSelected(compressedImage, file.name || 'image');
     } catch {
       Alert.alert('Upload failed', 'Unable to read the selected image.');
     }
@@ -942,28 +951,14 @@ export default function HomeScreen() {
               {t('homeScreen.journal.subtitle')}
             </Text>
             <TextInput
-              style={[styles.journalTextarea, rtlText, isGeneratingDescription && styles.journalTextareaBusy]}
+              style={[styles.journalTextarea, rtlText]}
               value={incidentDescription}
               onChangeText={setIncidentDescription}
               placeholder={t('homeScreen.journal.placeholder')}
               placeholderTextColor={Palette.inkFaint}
               multiline
               textAlignVertical="top"
-              editable={!isGeneratingDescription}
             />
-            {isGeneratingDescription ? (
-              <View style={styles.journalAiCaptionRow}>
-                <ActivityIndicator size="small" color={Palette.primary} />
-                <Text style={[styles.journalAiCaptionText, rtlText]}>
-                  {t('homeScreen.journal.generatingDescription')}
-                </Text>
-              </View>
-            ) : null}
-            {captionError ? (
-              <Text style={[styles.journalCaptionErrorText, rtlText]} accessibilityLiveRegion="polite">
-                {captionError}
-              </Text>
-            ) : null}
             {Platform.OS === 'web'
               ? React.createElement('input', {
                   ref: fileInputRef,
@@ -1006,24 +1001,53 @@ export default function HomeScreen() {
               <Text style={[styles.journalSaveButtonText, rtlText]}>{t('homeScreen.journal.saveEntry')}</Text>
             </TouchableOpacity>
             {selectedJournalImage ? (
-              <View style={styles.journalSelectedImageRow}>
-                <Image source={{ uri: selectedJournalImage }} style={styles.journalSelectedImage} />
-                <Text style={styles.journalSelectedImageLabel} numberOfLines={1}>
-                  {selectedJournalImageName || t('homeScreen.journal.selectedImage')}
-                </Text>
+              <View style={styles.journalSelectedImageBlock}>
+                <View style={styles.journalSelectedImageRow}>
+                  <Image source={{ uri: selectedJournalImage }} style={styles.journalSelectedImage} />
+                  <Text style={styles.journalSelectedImageLabel} numberOfLines={1}>
+                    {selectedJournalImageName || t('homeScreen.journal.selectedImage')}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      captionRequestRef.current += 1;
+                      setIsGeneratingDescription(false);
+                      setCaptionError(null);
+                      setSelectedJournalImage(null);
+                      setSelectedJournalImageName('');
+                      if (Platform.OS === 'web' && fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}>
+                    <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity
-                  onPress={() => {
-                    captionRequestRef.current += 1;
-                    setIsGeneratingDescription(false);
-                    setCaptionError(null);
-                    setSelectedJournalImage(null);
-                    setSelectedJournalImageName('');
-                    if (Platform.OS === 'web' && fileInputRef.current) {
-                      fileInputRef.current.value = '';
-                    }
-                  }}>
-                  <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
+                  style={[
+                    styles.journalAiGenerateButton,
+                    isGeneratingDescription && styles.journalAiGenerateButtonDisabled,
+                  ]}
+                  onPress={() => void generateAiCaption()}
+                  disabled={isGeneratingDescription}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('homeScreen.journal.generateAiDescription')}>
+                  {isGeneratingDescription ? (
+                    <>
+                      <ActivityIndicator size="small" color={Palette.primaryDeep} />
+                      <Text style={[styles.journalAiGenerateButtonText, rtlText]}>
+                        {t('homeScreen.journal.generatingDescription')}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={[styles.journalAiGenerateButtonText, rtlText]}>
+                      ✨ {t('homeScreen.journal.generateAiDescription')}
+                    </Text>
+                  )}
                 </TouchableOpacity>
+                {captionError ? (
+                  <Text style={[styles.journalCaptionErrorText, rtlText]} accessibilityLiveRegion="polite">
+                    {captionError}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
             {selectedJournalAudio ? (
@@ -2114,24 +2138,6 @@ const styles = StyleSheet.create({
     color: Palette.ink,
     fontSize: 14,
   },
-  journalTextareaBusy: {
-    opacity: 0.72,
-  },
-  journalAiCaptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 4,
-    paddingVertical: 6,
-  },
-  journalAiCaptionText: {
-    color: Palette.inkMuted,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
   journalCaptionErrorText: {
     marginTop: 6,
     color: '#B42318',
@@ -2281,11 +2287,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  journalSelectedImageRow: {
+  journalSelectedImageBlock: {
     marginTop: 12,
+    gap: 10,
+  },
+  journalSelectedImageRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  journalAiGenerateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Palette.primarySoft,
+    backgroundColor: Palette.surfaceTinted,
+  },
+  journalAiGenerateButtonDisabled: {
+    opacity: 0.72,
+  },
+  journalAiGenerateButtonText: {
+    color: Palette.primaryDeep,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   journalSelectedImage: {
     width: 56,
