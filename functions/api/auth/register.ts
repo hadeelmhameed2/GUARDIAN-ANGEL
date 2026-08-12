@@ -1,4 +1,5 @@
 import { createToken, hashPassword } from "../../_lib/auth";
+import { requireAuthEnv } from "../../_lib/env";
 import { badRequest, json, methodNotAllowed } from "../../_lib/http";
 
 type Env = {
@@ -17,6 +18,9 @@ type ExistingUser = {
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const envError = requireAuthEnv(context.env);
+  if (envError) return envError;
+
   let body: RegisterBody;
   try {
     body = (await context.request.json()) as RegisterBody;
@@ -39,23 +43,31 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return badRequest("password must be at least 4 characters");
   }
 
-  const existing = await context.env.DB.prepare("SELECT id FROM users WHERE username = ? LIMIT 1")
-    .bind(username)
-    .first<ExistingUser>();
+  try {
+    const existing = await context.env.DB.prepare("SELECT id FROM users WHERE username = ? LIMIT 1")
+      .bind(username)
+      .first<ExistingUser>();
 
-  if (existing) {
-    return badRequest("username already exists");
+    if (existing) {
+      return badRequest("username already exists");
+    }
+
+    const passwordHash = await hashPassword(password, context.env.PASSWORD_SALT);
+    const insert = await context.env.DB.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+      .bind(username, passwordHash)
+      .run();
+
+    const userId = Number(insert.meta.last_row_id ?? 0);
+    const token = await createToken(
+      { userId, username, calculatorCode: password },
+      context.env.AUTH_SECRET,
+    );
+
+    return json({ token, user: { id: userId, username } }, 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Registration failed";
+    return json({ error: message }, 500);
   }
-
-  const passwordHash = await hashPassword(password, context.env.PASSWORD_SALT);
-  const insert = await context.env.DB.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
-    .bind(username, passwordHash)
-    .run();
-
-  const userId = Number(insert.meta.last_row_id ?? 0);
-  const token = await createToken({ userId, username, calculatorCode: password }, context.env.AUTH_SECRET);
-
-  return json({ token, user: { id: userId, username } }, 201);
 };
 
 export const onRequest: PagesFunction = () => methodNotAllowed("POST");

@@ -44,4 +44,4 @@ app-example
 /android
 
 *.zip
-.expo/
+.expo/.env

@@ -111,6 +111,14 @@
       "clearAll": "מחיקת כל הרשומות",
       "delete": "מחק",
       "placeholder": "תארי מה קרה...",
+      "generatingDescription": "מנתחת את התמונה לתיאור עובדתי…",
+      "captionErrorNoToken": "התחברי עם קוד המחשבון כדי להפעיל תיאור AI.",
+      "captionErrorUnauthorized": "ההתחברות פגה. נעלי ופתחי שוב עם הקוד, ואז נסי שוב.",
+      "captionErrorTooLarge": "התמונה גדולה מדי לניתוח AI. נסי תמונה קטנה יותר.",
+      "captionErrorMisconfigured": "תיאור AI עדיין לא מוגדר בשרת.",
+      "captionErrorNetwork": "לא ניתן להגיע לשירות התיאור. בדקי את החיבור.",
+      "captionErrorEmpty": "AI לא החזיר תיאור. אפשר להקליד ידנית.",
+      "captionErrorServer": "תיאור AI נכשל. אפשר עדיין לתאר את התמונה ידנית.",
       "audioAttached": "🎤 מצורף קובץ אודיו ({{seconds}} שנ׳)"
     },
     "emergency": {

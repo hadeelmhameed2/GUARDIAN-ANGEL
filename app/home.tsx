@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   Image,
   Linking,
   Modal,
@@ -46,6 +47,7 @@ import {
 } from '@/src/evidence';
 import { readJournalRaw, writeJournalRaw } from '@/src/journal-storage';
 import { pickJournalImageNative } from '@/src/journal-image';
+import { appendJournalCaption, describeImageErrorMessage, describeJournalImage } from '@/src/journal-ai-caption';
 import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
 import { MOOD_PALETTE } from '@/src/mood-checkin/constants';
 import { runSafetyCheckinPipeline } from '@/src/mood-checkin/pipeline';
@@ -171,6 +173,8 @@ export default function HomeScreen() {
   const [incidentDescription, setIncidentDescription] = useState('');
   const [selectedJournalImage, setSelectedJournalImage] = useState<string | null>(null);
   const [selectedJournalImageName, setSelectedJournalImageName] = useState('');
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [captionError, setCaptionError] = useState<string | null>(null);
   const [selectedJournalAudio, setSelectedJournalAudio] = useState<string | null>(null);
   const [selectedJournalAudioDuration, setSelectedJournalAudioDuration] = useState(0);
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
@@ -185,6 +189,7 @@ export default function HomeScreen() {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const captionRequestRef = useRef(0);
   const isUnlocked = hasSecureSessionAccess();
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -267,6 +272,28 @@ export default function HomeScreen() {
     return true;
   };
 
+  const handleJournalImageSelected = async (base64: string, name: string) => {
+    setSelectedJournalImage(base64);
+    setSelectedJournalImageName(name);
+    setCaptionError(null);
+    const requestId = captionRequestRef.current + 1;
+    captionRequestRef.current = requestId;
+    setIsGeneratingDescription(true);
+    try {
+      const result = await describeJournalImage(base64);
+      if (captionRequestRef.current !== requestId) return;
+      if (result.ok) {
+        setIncidentDescription((prev) => appendJournalCaption(prev, result.description));
+      } else {
+        setCaptionError(describeImageErrorMessage(result.reason, t, result.message));
+      }
+    } finally {
+      if (captionRequestRef.current === requestId) {
+        setIsGeneratingDescription(false);
+      }
+    }
+  };
+
   const openImagePicker = () => {
     if (Platform.OS === 'web') {
       fileInputRef.current?.click();
@@ -275,8 +302,7 @@ export default function HomeScreen() {
     void (async () => {
       const picked = await pickJournalImageNative();
       if (picked) {
-        setSelectedJournalImage(picked.base64);
-        setSelectedJournalImageName(picked.name);
+        await handleJournalImageSelected(picked.base64, picked.name);
       }
     })();
   };
@@ -321,8 +347,7 @@ export default function HomeScreen() {
     if (!file) return;
     try {
       const compressedImage = await compressImageToDataUrl(file);
-      setSelectedJournalImage(compressedImage);
-      setSelectedJournalImageName(file.name || 'image');
+      await handleJournalImageSelected(compressedImage, file.name || 'image');
     } catch {
       Alert.alert('Upload failed', 'Unable to read the selected image.');
     }
@@ -917,14 +942,28 @@ export default function HomeScreen() {
               {t('homeScreen.journal.subtitle')}
             </Text>
             <TextInput
-              style={[styles.journalTextarea, rtlText]}
+              style={[styles.journalTextarea, rtlText, isGeneratingDescription && styles.journalTextareaBusy]}
               value={incidentDescription}
               onChangeText={setIncidentDescription}
               placeholder={t('homeScreen.journal.placeholder')}
               placeholderTextColor={Palette.inkFaint}
               multiline
               textAlignVertical="top"
+              editable={!isGeneratingDescription}
             />
+            {isGeneratingDescription ? (
+              <View style={styles.journalAiCaptionRow}>
+                <ActivityIndicator size="small" color={Palette.primary} />
+                <Text style={[styles.journalAiCaptionText, rtlText]}>
+                  {t('homeScreen.journal.generatingDescription')}
+                </Text>
+              </View>
+            ) : null}
+            {captionError ? (
+              <Text style={[styles.journalCaptionErrorText, rtlText]} accessibilityLiveRegion="polite">
+                {captionError}
+              </Text>
+            ) : null}
             {Platform.OS === 'web'
               ? React.createElement('input', {
                   ref: fileInputRef,
@@ -974,6 +1013,9 @@ export default function HomeScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
+                    captionRequestRef.current += 1;
+                    setIsGeneratingDescription(false);
+                    setCaptionError(null);
                     setSelectedJournalImage(null);
                     setSelectedJournalImageName('');
                     if (Platform.OS === 'web' && fileInputRef.current) {
@@ -2071,6 +2113,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: Palette.ink,
     fontSize: 14,
+  },
+  journalTextareaBusy: {
+    opacity: 0.72,
+  },
+  journalAiCaptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 4,
+    paddingVertical: 6,
+  },
+  journalAiCaptionText: {
+    color: Palette.inkMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  journalCaptionErrorText: {
+    marginTop: 6,
+    color: '#B42318',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'left',
   },
   journalFormFooter: {
     marginTop: 12,

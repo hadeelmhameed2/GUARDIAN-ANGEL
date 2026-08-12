@@ -111,6 +111,14 @@
       "clearAll": "Clear All Entries",
       "delete": "Delete",
       "placeholder": "Describe what happened...",
+      "generatingDescription": "Analyzing image for a factual description…",
+      "captionErrorNoToken": "Sign in with your calculator PIN to enable AI captioning.",
+      "captionErrorUnauthorized": "Session expired. Lock and unlock the app with your PIN, then try again.",
+      "captionErrorTooLarge": "Image is too large for AI analysis. Try a smaller photo.",
+      "captionErrorMisconfigured": "AI captioning is not configured on the server yet.",
+      "captionErrorNetwork": "Could not reach the caption service. Check your connection.",
+      "captionErrorEmpty": "AI returned no description. You can type one manually.",
+      "captionErrorServer": "AI captioning failed. You can still describe the image manually.",
       "audioAttached": "🎤 Audio recording attached ({{seconds}}s)"
     },
     "emergency": {

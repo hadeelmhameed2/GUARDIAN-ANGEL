@@ -1,4 +1,5 @@
 import { createToken, hashPassword } from "../../_lib/auth";
+import { requireAuthEnv } from "../../_lib/env";
 import { badRequest, json, methodNotAllowed, unauthorized } from "../../_lib/http";
 
 type Env = {
@@ -19,6 +20,9 @@ type UserRow = {
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const envError = requireAuthEnv(context.env);
+  if (envError) return envError;
+
   let body: LoginBody;
   try {
     body = (await context.request.json()) as LoginBody;
@@ -33,27 +37,32 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return badRequest("username and password are required");
   }
 
-  const result = await context.env.DB.prepare(
-    "SELECT id, username, password_hash FROM users WHERE username = ? LIMIT 1"
-  )
-    .bind(username)
-    .first<UserRow>();
+  try {
+    const result = await context.env.DB.prepare(
+      "SELECT id, username, password_hash FROM users WHERE username = ? LIMIT 1",
+    )
+      .bind(username)
+      .first<UserRow>();
 
-  if (!result) {
-    return unauthorized("Invalid credentials");
+    if (!result) {
+      return unauthorized("Invalid credentials");
+    }
+
+    const incomingHash = await hashPassword(password, context.env.PASSWORD_SALT);
+    if (incomingHash !== result.password_hash) {
+      return unauthorized("Invalid credentials");
+    }
+
+    const token = await createToken(
+      { userId: result.id, username: result.username, calculatorCode: password },
+      context.env.AUTH_SECRET,
+    );
+
+    return json({ token, user: { id: result.id, username: result.username } });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Login failed";
+    return json({ error: message }, 500);
   }
-
-  const incomingHash = await hashPassword(password, context.env.PASSWORD_SALT);
-  if (incomingHash !== result.password_hash) {
-    return unauthorized("Invalid credentials");
-  }
-
-  const token = await createToken(
-    { userId: result.id, username: result.username, calculatorCode: password },
-    context.env.AUTH_SECRET
-  );
-
-  return json({ token, user: { id: result.id, username: result.username } });
 };
 
 export const onRequest: PagesFunction = () => methodNotAllowed("POST");

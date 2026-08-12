@@ -1,22 +1,15 @@
-const CORS_HEADERS: Record<string, string> = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'authorization, content-type',
-  'access-control-max-age': '86400',
-};
+import { corsJsonError, corsPreflightResponse, withCors } from "./_lib/cors";
 
 export const onRequest: PagesFunction = async (context) => {
-  if (context.request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (context.request.method === "OPTIONS") {
+    return corsPreflightResponse();
   }
-  const response = await context.next();
-  const headers = new Headers(response.headers);
-  for (const [key, value] of Object.entries(CORS_HEADERS)) {
-    headers.set(key, value);
+
+  try {
+    const response = await context.next();
+    return withCors(response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return corsJsonError(message, 500);
   }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
 };

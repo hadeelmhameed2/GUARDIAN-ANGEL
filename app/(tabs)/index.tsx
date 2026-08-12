@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
-import { apiFetch } from '@/src/api';
+import { apiFetch, isApiConfigured } from '@/src/api';
 import {
   AUTH_TOKEN_KEY,
   AUTH_CALCULATOR_CODE_KEY,
@@ -25,8 +25,8 @@ import {
   writeSecureItem,
 } from '@/src/secure-storage';
 
-/** Set to `false` before production to restore real `/api/auth` login & registration. */
-const BYPASS_SERVER_AUTH = true;
+/** Production: real Cloudflare `/api/auth` login & registration. Set `true` only for offline dev. */
+const BYPASS_SERVER_AUTH = false;
 
 const FOUR_DIGIT_PIN = /^\d{4}$/;
 
@@ -177,6 +177,16 @@ export default function CalculatorMaskScreen() {
       return;
     }
 
+    if (mode === 'register' && nextUsername.length < 3) {
+      setErrorMessage('Username must be at least 3 characters.');
+      return;
+    }
+
+    if (!isApiConfigured()) {
+      setErrorMessage('Server URL is not configured. Set EXPO_PUBLIC_API_BASE_URL and restart the app.');
+      return;
+    }
+
     setErrorMessage('');
     setIsSubmitting(true);
     try {
@@ -212,8 +222,10 @@ export default function CalculatorMaskScreen() {
       }
 
       await saveSession(token, nextPassword);
+      await writeSecureItem(AUTH_USERNAME_KEY, nextUsername);
       const unlocked = await unlockSecureDataWithPin(nextPassword);
       if (unlocked) {
+        setShowAuthPanel(false);
         router.replace('/home');
       }
     } catch {

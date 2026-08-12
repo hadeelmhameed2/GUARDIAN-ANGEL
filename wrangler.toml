@@ -4,10 +4,13 @@ pages_build_output_dir = "./dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "guardianangel-db"
-database_id = "582a5df1-6725-46bd-b378-61190f47f242"
+database_name = "guardian-angel-db"
+database_id = "38813aad-eb47-49fc-b357-52351811875a"
 
 # Re-enable this block after R2 is enabled in Cloudflare Dashboard.
 # [[r2_buckets]]
 # binding = "JOURNAL_IMAGES"
 # bucket_name = "guardianangel-journal-images"
+
+[ai]
+binding = "AI"
