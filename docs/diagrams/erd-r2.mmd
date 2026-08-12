@@ -1,0 +1,18 @@
+erDiagram
+    users ||--o{ journal : "owns"
+    journal }o--o| r2_object : "image_url references"
+
+    users {
+        int id PK
+    }
+
+    journal {
+        int id PK
+        text image_url "GET /images/{key}"
+    }
+
+    r2_object {
+        text key PK "journal/userId/timestamp.ext"
+        blob body "image bytes"
+        text content_type "e.g. image/jpeg"
+    }

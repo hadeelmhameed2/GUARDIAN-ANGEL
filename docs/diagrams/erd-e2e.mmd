@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph client["Mobile app"]
+        SS[SecureStore]
+        AS[AsyncStorage]
+        EJ[Evidence journal JSON]
+        Mood[Mood / safety check-in]
+    end
+
+    subgraph cloud["Cloudflare"]
+        API[Pages Functions]
+        D1[(D1: users, journal)]
+        R2[(R2: journal images)]
+    end
+
+    SS -->|JWT, calculator code, risk / exit fund| API
+    AS --> EJ
+    AS --> Mood
+    API --> D1
+    API --> R2
+    D1 -.->|image_url| R2

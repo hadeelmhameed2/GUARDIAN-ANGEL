@@ -1,7 +1,7 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -15,10 +15,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch } from '@/src/api';
-import { readSecureItem, writeSecureItem } from '@/src/secure-storage';
+import {
+  AUTH_TOKEN_KEY,
+  AUTH_CALCULATOR_CODE_KEY,
+  AUTH_USERNAME_KEY,
+  hasAuthToken,
+  loadAuthCredentials,
+  type AuthCredentials,
+  writeSecureItem,
+} from '@/src/secure-storage';
 
 /** Set to `false` before production to restore real `/api/auth` login & registration. */
 const BYPASS_SERVER_AUTH = true;
+
+const FOUR_DIGIT_PIN = /^\d{4}$/;
+
+function isFourDigitPin(value: string): boolean {
+  return FOUR_DIGIT_PIN.test(value);
+}
+
+function getPinValidationError(pin: string): string | null {
+  if (!pin) return 'Please enter your 4-digit PIN.';
+  if (!/^\d+$/.test(pin)) return 'Please enter a valid 4-digit number.';
+  if (pin.length < 4) return 'PIN must be exactly 4 digits.';
+  if (pin.length > 4) return 'PIN must be exactly 4 digits.';
+  return null;
+}
 
 const BUTTONS: Array<Array<string>> = [
   ['AC', '+/-', '%', '/'],
@@ -91,46 +113,77 @@ export default function CalculatorMaskScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [storedToken, setStoredToken] = useState<string | null>(null);
-  const [storedCalculatorCode, setStoredCalculatorCode] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const TOKEN_KEY = 'ga_auth_token';
-  const CODE_KEY = 'ga_calculator_code';
+  const authHeaderTitle = authMode === 'register' ? 'Welcome to Guardian Angel' : 'Welcome Back';
+  const authHeaderSubtitle =
+    authMode === 'register'
+      ? 'Choose a 4-digit numeric code as your secret PIN.'
+      : 'Sign in with your username and 4-digit PIN.';
+
+  const handleUsernameChange = (text: string) => {
+    setErrorMessage('');
+    setUsername(text);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setErrorMessage('');
+    setPassword(text.replace(/\D/g, '').slice(0, 4));
+  };
+
+  const closeAuthPanel = () => {
+    setErrorMessage('');
+    setShowAuthPanel(false);
+  };
+
+  const toggleAuthMode = () => {
+    setErrorMessage('');
+    setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'));
+  };
+
+  const refreshAuthFromStorage = useCallback(async (): Promise<AuthCredentials> => {
+    return loadAuthCredentials();
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      const [token, code] = await Promise.all([
-        readSecureItem(TOKEN_KEY),
-        readSecureItem(CODE_KEY),
-      ]);
-      setStoredToken(token);
-      setStoredCalculatorCode(code);
-    })();
-  }, []);
+    void refreshAuthFromStorage();
+  }, [refreshAuthFromStorage]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshAuthFromStorage();
+    }, [refreshAuthFromStorage]),
+  );
 
   const saveSession = async (token: string, calculatorCode: string) => {
     await Promise.all([
-      writeSecureItem(TOKEN_KEY, token),
-      writeSecureItem(CODE_KEY, calculatorCode),
+      writeSecureItem(AUTH_TOKEN_KEY, token),
+      writeSecureItem(AUTH_CALCULATOR_CODE_KEY, calculatorCode),
     ]);
-    setStoredToken(token);
-    setStoredCalculatorCode(calculatorCode);
   };
 
   const submitAuth = async (mode: 'login' | 'register') => {
     const nextUsername = username.trim();
     const nextPassword = password.trim();
+
     if (!nextUsername || !nextPassword) {
-      Alert.alert('Missing fields', 'Please enter Username and Password.');
+      setErrorMessage('Please enter both username and PIN.');
       return;
     }
 
+    const pinError = getPinValidationError(nextPassword);
+    if (pinError) {
+      setErrorMessage(pinError);
+      return;
+    }
+
+    setErrorMessage('');
     setIsSubmitting(true);
     try {
       if (BYPASS_SERVER_AUTH) {
         const localToken = `local-dev-${Date.now()}`;
         await saveSession(localToken, nextPassword);
-        await writeSecureItem('ga_auth_username', nextUsername);
+        await writeSecureItem(AUTH_USERNAME_KEY, nextUsername);
         const unlocked = await unlockSecureDataWithPin(nextPassword);
         if (unlocked) {
           setShowAuthPanel(false);
@@ -146,13 +199,15 @@ export default function CalculatorMaskScreen() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        Alert.alert(mode === 'register' ? 'Registration failed' : 'Login failed', payload?.error ?? 'Request failed.');
+        setErrorMessage(
+          String(payload?.error ?? (mode === 'register' ? 'Registration failed.' : 'Login failed.')),
+        );
         return;
       }
 
       const token = String(payload?.token ?? '');
       if (!token) {
-        Alert.alert('Error', 'Token not returned from server.');
+        setErrorMessage('Something went wrong. Please try again.');
         return;
       }
 
@@ -162,9 +217,49 @@ export default function CalculatorMaskScreen() {
         router.replace('/home');
       }
     } catch {
-      Alert.alert('Network error', 'Could not connect to server.');
+      setErrorMessage('Could not connect. Check your network and try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEqualsPress = async (currentExpression: string) => {
+    if (!currentExpression) return;
+
+    const { token, calculatorCode } = await refreshAuthFromStorage();
+    const hasToken = hasAuthToken(token);
+    const personalCode = calculatorCode;
+
+    if (!hasToken && currentExpression === '1234') {
+      setShowAuthPanel(true);
+      setExpression('');
+      setDisplay('0');
+      return;
+    }
+
+    if (hasToken && personalCode && isFourDigitPin(currentExpression)) {
+      if (currentExpression === personalCode) {
+        const unlocked = await unlockSecureDataWithPin(currentExpression);
+        if (unlocked) {
+          setExpression('');
+          setDisplay('0');
+          router.replace('/home');
+        }
+        return;
+      }
+      setExpression('');
+      setDisplay('0');
+      return;
+    }
+
+    try {
+      const result = evaluateExpression(currentExpression);
+      const resultText = Number.isInteger(result) ? String(result) : String(Number(result.toFixed(8)));
+      setExpression(resultText);
+      setDisplay(resultText.slice(0, 12));
+    } catch {
+      setExpression('');
+      setDisplay('0');
     }
   };
 
@@ -177,34 +272,7 @@ export default function CalculatorMaskScreen() {
 
     if (key === '=') {
       if (!expression) return;
-      const hasToken = Boolean(storedToken);
-      const personalCode = storedCalculatorCode;
-
-      if (!hasToken && expression === '1234') {
-        setShowAuthPanel(true);
-        setExpression('');
-        setDisplay('0');
-        return;
-      }
-
-      if (hasToken && personalCode && expression === personalCode) {
-        void (async () => {
-          const unlocked = await unlockSecureDataWithPin(expression);
-          if (unlocked) {
-            router.replace('/home');
-          }
-        })();
-        return;
-      }
-      try {
-        const result = evaluateExpression(expression);
-        const resultText = Number.isInteger(result) ? String(result) : String(Number(result.toFixed(8)));
-        setExpression(resultText);
-        setDisplay(resultText.slice(0, 12));
-      } catch {
-        setExpression('');
-        setDisplay('0');
-      }
+      void handleEqualsPress(expression);
       return;
     }
 
@@ -269,12 +337,12 @@ export default function CalculatorMaskScreen() {
   const submitLabel = isSubmitting ? 'Please wait...' : authMode === 'login' ? 'Log in' : 'Sign up';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { direction: 'ltr' }]}>
       <Modal
         visible={showAuthPanel}
         animationType="slide"
         transparent={false}
-        onRequestClose={() => setShowAuthPanel(false)}>
+        onRequestClose={closeAuthPanel}>
         <LinearGradient
           colors={['#FBF1EC', '#FAE1D8', '#FBF1EC']}
           start={{ x: 0.2, y: 0 }}
@@ -284,7 +352,7 @@ export default function CalculatorMaskScreen() {
             <View style={styles.authTopBar}>
               <TouchableOpacity
                 style={styles.authCloseButton}
-                onPress={() => setShowAuthPanel(false)}
+                onPress={closeAuthPanel}
                 accessibilityLabel="Close">
                 <Text style={{ fontSize: 20, color: Palette.inkSoft, lineHeight: 20 }}>✕</Text>
               </TouchableOpacity>
@@ -294,12 +362,12 @@ export default function CalculatorMaskScreen() {
               contentContainerStyle={styles.authScrollContent}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}>
-              <View style={styles.authBrandWrap}>
+              <View style={styles.authHeader}>
                 <View style={styles.authBrandIcon}>
                   <Text style={{ fontSize: 28, color: Palette.primary, lineHeight: 28 }}>❤️</Text>
                 </View>
-                <Text style={styles.authBrandTitle}>Guardian</Text>
-                <Text style={styles.authBrandSubtitle}>Your safe, private space.</Text>
+                <Text style={styles.authHeaderTitle}>{authHeaderTitle}</Text>
+                <Text style={styles.authHeaderSubtitle}>{authHeaderSubtitle}</Text>
               </View>
 
               <View style={styles.authForm}>
@@ -310,30 +378,35 @@ export default function CalculatorMaskScreen() {
                     placeholder="Username"
                     placeholderTextColor={Palette.inkFaint}
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={handleUsernameChange}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                 </View>
 
-                <View style={styles.authFieldWrap}>
-                  <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔒</Text>
-                  <TextInput
-                    style={styles.authField}
-                    placeholder="Password"
-                    placeholderTextColor={Palette.inkFaint}
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword((prev) => !prev)}
-                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                    style={styles.authEyeButton}>
-                    <Text style={{ fontSize: 18, color: Palette.inkMuted, lineHeight: 18 }}>
-                      {showPassword ? '🙈' : '👁️'}
-                    </Text>
-                  </TouchableOpacity>
+                <View style={styles.authPinFieldGroup}>
+                  <View style={[styles.authFieldWrap, errorMessage ? styles.authFieldWrapError : null]}>
+                    <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔒</Text>
+                    <TextInput
+                      style={styles.authField}
+                      placeholder="Enter 4-digit PIN"
+                      placeholderTextColor={Palette.inkFaint}
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={handlePasswordChange}
+                      keyboardType="numeric"
+                      maxLength={4}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      accessibilityLabel={showPassword ? 'Hide PIN' : 'Show PIN'}
+                      style={styles.authEyeButton}>
+                      <Text style={{ fontSize: 18, color: Palette.inkMuted, lineHeight: 18 }}>
+                        {showPassword ? '🙈' : '👁️'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {errorMessage ? <Text style={styles.authErrorText}>{errorMessage}</Text> : null}
                 </View>
 
                 <TouchableOpacity
@@ -349,9 +422,7 @@ export default function CalculatorMaskScreen() {
                   <View style={styles.authDividerLine} />
                 </View>
 
-                <TouchableOpacity
-                  style={styles.authToggleButton}
-                  onPress={() => setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))}>
+                <TouchableOpacity style={styles.authToggleButton} onPress={toggleAuthMode}>
                   <Text style={styles.authToggleText}>
                     {authMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                     <Text style={styles.authToggleAccent}>
@@ -369,12 +440,12 @@ export default function CalculatorMaskScreen() {
         </LinearGradient>
       </Modal>
 
-      <View style={styles.displayWrap}>
+      <View style={[styles.displayWrap, { direction: 'ltr' }]}>
         <Text style={styles.display}>{display}</Text>
       </View>
-      <View style={styles.keypad}>
+      <View style={[styles.keypad, { direction: 'ltr' }]}>
         {BUTTONS.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={styles.row}>
+          <View key={`row-${rowIndex}`} style={[styles.row, { direction: 'ltr' }]}>
             {row.map((key) => {
               const isZero = key === '0' && row.length === 3;
               const isTop = ['AC', '+/-', '%'].includes(key);
@@ -433,38 +504,44 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
-    paddingTop: 24,
+    paddingTop: 8,
     paddingBottom: 32,
   },
-  authBrandWrap: {
+  authHeader: {
     alignItems: 'center',
-    marginBottom: 36,
+    marginBottom: 40,
+    paddingHorizontal: 8,
   },
   authBrandIcon: {
-    width: 76,
-    height: 76,
-    borderRadius: 26,
+    width: 72,
+    height: 72,
+    borderRadius: 24,
     backgroundColor: '#FFFCF9',
     borderWidth: 1,
     borderColor: Palette.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: 20,
     ...Shadow.lift,
   },
-  authBrandTitle: {
-    fontSize: 38,
+  authHeaderTitle: {
+    fontSize: 26,
     fontFamily: Fonts.serif,
     fontStyle: 'italic',
-    fontWeight: '500',
+    fontWeight: '600',
     color: Palette.ink,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+    lineHeight: 32,
   },
-  authBrandSubtitle: {
-    marginTop: 8,
-    fontSize: 13,
+  authHeaderSubtitle: {
+    marginTop: 10,
+    fontSize: 14,
     color: Palette.inkMuted,
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    lineHeight: 21,
+    maxWidth: 300,
   },
   authForm: {
     width: '100%',
@@ -474,12 +551,19 @@ const styles = StyleSheet.create({
   authFieldWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderWidth: 1,
     borderColor: Palette.border,
     borderRadius: 16,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  authFieldWrapError: {
+    borderColor: Palette.rose,
+    backgroundColor: 'rgba(255,252,249,0.95)',
+  },
+  authPinFieldGroup: {
+    marginBottom: 6,
   },
   authFieldIcon: {
     marginRight: 12,
@@ -490,12 +574,22 @@ const styles = StyleSheet.create({
     color: Palette.ink,
     fontSize: 15,
   },
+  authErrorText: {
+    color: Palette.rose,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 10,
+    paddingHorizontal: 8,
+  },
   authEyeButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
   },
   authPrimaryButton: {
-    marginTop: 8,
+    marginTop: 12,
     backgroundColor: Palette.primary,
     borderRadius: 999,
     paddingVertical: 17,
@@ -561,6 +655,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 72,
     fontWeight: '300',
+    writingDirection: 'ltr',
   },
   keypad: {
     gap: 12,

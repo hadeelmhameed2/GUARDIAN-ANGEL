@@ -42,6 +42,8 @@ To ensure maximum security and scalability, the app utilizes a full serverless a
 * **Cloudflare D1 (SQL Database):** A relational database used to store encrypted user credentials, personal calculator codes, and journal entries.
 * **Cloudflare R2 (Object Storage):** S3-compatible storage for securely hosting images uploaded by users, ensuring no sensitive media is stored on the physical device.
 * **Security:** Implements **Hashing** for passwords and utilizes **Wrangler** for secure environment binding.
+
+See **[Entity Relationship Diagram](docs/ERD.md)** and **[Workshop Diagrams (ERD + Class Diagram)](docs/WORKSHOP_DIAGRAMS.md)** for data model and architecture.
   
 ## 🛠 Tech Stack
 

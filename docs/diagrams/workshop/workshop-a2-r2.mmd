@@ -1,0 +1,18 @@
+erDiagram
+    users ||--o{ journal : "1:N"
+    journal }o--o| r2_journal_object : "0..1 image_url"
+
+    users {
+        int id PK
+    }
+
+    journal {
+        int id PK
+        text image_url
+    }
+
+    r2_journal_object {
+        text object_key PK "journal/userId/ts.ext"
+        blob bytes
+        text content_type
+    }

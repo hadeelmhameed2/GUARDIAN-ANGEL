@@ -22,6 +22,7 @@ import {
   addTrustedContact,
   getTrustedContacts,
   hasSecureSessionAccess,
+  lockSecureSession,
   setTrustedContacts,
   type TrustedContact,
   type RiskState,
@@ -150,7 +151,11 @@ export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   const { rtlText, rtlWriting } = useRtlTextStyle();
-  useShakeHide({ onShake: () => router.replace('/(tabs)') });
+  const exitToCalculator = () => {
+    lockSecureSession();
+    router.replace('/(tabs)');
+  };
+  useShakeHide({ onShake: exitToCalculator });
   const [currentStatus, setStatus] = useState<RiskState>(getCurrentStatus());
   const [trustedContactName, setTrustedContactName] = useState('');
   const [trustedContactPhone, setTrustedContactPhone] = useState('');
@@ -186,7 +191,7 @@ export default function HomeScreen() {
       router.back();
       return;
     }
-    router.replace('/(tabs)');
+    exitToCalculator();
   };
 
   useFocusEffect(
@@ -776,7 +781,7 @@ export default function HomeScreen() {
           <View style={styles.safetyTipsModal}>
             <View style={styles.safetyTipsHeader}>
               <Text style={[styles.safetyTipsTitle, rtlText]}>{t('homeScreen.safetyTips.title')}</Text>
-              <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+              <TouchableOpacity onPress={exitToCalculator}>
                 <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
               </TouchableOpacity>
             </View>
@@ -1054,7 +1059,7 @@ export default function HomeScreen() {
                 <LanguageSwitcher />
                 <TouchableOpacity
                   style={styles.quickExitButton}
-                  onPress={() => router.replace('/(tabs)')}
+                  onPress={exitToCalculator}
                   accessibilityLabel="Exit">
                   <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
                 </TouchableOpacity>

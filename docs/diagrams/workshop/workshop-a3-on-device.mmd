@@ -1,0 +1,52 @@
+erDiagram
+    device_user_session ||--|| secure_credentials : "1:1"
+    device_user_session ||--|| risk_snapshot : "1:1"
+    device_user_session ||--o{ evidence_journal_entry : "1:N"
+    device_user_session ||--o{ mood_entry : "1:N"
+    device_user_session ||--|| safety_checkin_settings : "1:1"
+    device_user_session ||--|| safety_checkin_state : "1:1"
+    device_user_session ||--|| emergency_contact : "1:1"
+    device_user_session ||--|| panic_settings : "1:1"
+    risk_snapshot ||--o{ exit_fund_transaction : "1:N embedded"
+    risk_snapshot ||--o{ trusted_contact : "1:N max 2"
+
+    secure_credentials {
+        string ga_auth_token "JWT"
+        string ga_calculator_code "unlock PIN"
+        string ga_auth_username "optional"
+    }
+
+    risk_snapshot {
+        enum user_risk_status "green|yellow|red"
+        number exit_fund_balance
+        number main_account_balance
+        number user_defined_limit
+        bool is_emergency_active
+    }
+
+    evidence_journal_entry {
+        string id PK
+        string description
+        string timestamp
+        string imageBase64
+        string audioBase64
+        string entryHash
+        string previousEntryHash
+    }
+
+    mood_entry {
+        string date "YYYY-MM-DD PK part"
+        enum moodId
+        number recordedAt
+    }
+
+    emergency_contact {
+        string name
+        string phone
+        string email
+    }
+
+    panic_settings {
+        string phoneNumber
+        string emergencyMessage
+    }

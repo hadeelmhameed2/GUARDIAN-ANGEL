@@ -1,0 +1,71 @@
+classDiagram
+    direction TB
+
+  class AuthMiddleware {
+    <<PagesFunction>>
+    +onRequest() Response
+  }
+
+  class LoginHandler {
+    <<handler>>
+    +onRequestPost() Response
+  }
+
+  class RegisterHandler {
+    <<handler>>
+    +onRequestPost() Response
+  }
+
+  class ImageUploadHandler {
+    <<handler>>
+    +onRequestPost() Response
+  }
+
+  class ImageServeHandler {
+    <<handler>>
+    +onRequestGet() Response
+  }
+
+  class AuthLib {
+    <<service>>
+    +createToken(payload, secret) string
+    +verifyToken(token, secret) SessionPayload
+    +hashPassword(password, salt) string
+  }
+
+  class HttpLib {
+    <<service>>
+    +json(data, status) Response
+    +badRequest(msg) Response
+    +unauthorized(msg) Response
+  }
+
+  class D1Database {
+    <<Cloudflare>>
+    users
+    journal
+  }
+
+  class R2Bucket {
+    <<Cloudflare>>
+    JOURNAL_IMAGES
+  }
+
+  class UserRow {
+    +number id
+    +string username
+    +string password_hash
+  }
+
+  LoginHandler --> AuthLib
+  LoginHandler --> D1Database
+  RegisterHandler --> AuthLib
+  RegisterHandler --> D1Database
+  ImageUploadHandler --> AuthLib
+  ImageUploadHandler --> R2Bucket
+  ImageServeHandler --> R2Bucket
+  LoginHandler --> HttpLib
+  RegisterHandler --> HttpLib
+  ImageUploadHandler --> HttpLib
+  LoginHandler ..> UserRow : SELECT
+  LoginHandler ..> SessionPayload : JWT body

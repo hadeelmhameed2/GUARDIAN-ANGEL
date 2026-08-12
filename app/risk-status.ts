@@ -276,20 +276,16 @@ export async function unlockSecureDataWithPin(pin: string) {
   return true;
 }
 
+export function lockSecureSession() {
+  isSecureSessionUnlocked = false;
+}
+
 let sessionReadyPromise: Promise<void> | null = null;
 
+/** Resolves once; does not unlock — the user must enter their PIN on the calculator. */
 export function awaitSessionReady(): Promise<void> {
   if (sessionReadyPromise) return sessionReadyPromise;
-  sessionReadyPromise = (async () => {
-    if (isSecureSessionUnlocked) return;
-    const [token, code] = await Promise.all([
-      readSecureItem('ga_auth_token'),
-      readSecureItem('ga_calculator_code'),
-    ]);
-    if (!token || !code) return;
-    isSecureSessionUnlocked = true;
-    await hydrateSecureData();
-  })();
+  sessionReadyPromise = Promise.resolve();
   return sessionReadyPromise;
 }
 
