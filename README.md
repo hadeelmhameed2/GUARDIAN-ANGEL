@@ -1,65 +1,83 @@
 # Guardian Angel 👼
-> **Empowerment through discretion. A stealth-safety application for women.**
+> **Empowerment through discretion. A stealth-safety platform for women.**
 
-Guardian Angel is a mobile application designed to provide a safe space for women in high-risk environments. On the surface, it appears and functions as a fully operational, standard calculator. However, through a discreet authentication process, it unlocks a comprehensive safety suite.
-
----
-
-## 📱 Features
-
-### 1. The Stealth Mask (Calculator UI)
-The app opens to a fully functional calculator. Only by entering a specific numerical code (e.g., `1234=`) does the hidden safety dashboard unlock.
-
-### 2. Traffic Light Assessment 🚦
-A real-time behavioral indicator system that helps users evaluate their current situation. 
-* **Green:** Low risk, focus on empowerment.
-* **Yellow:** Warning signs detected, preparation mode.
-* **Red:** High risk, immediate access to emergency protocols.
-* *Technical Note:* Implements a **Reverse Scoring Logic** to translate behavioral indicators into actionable risk levels.
-
-### 3. Exit Fund Vault 💰
-A secure, encrypted digital wallet designed to help users manage their financial independence discreetly, away from monitoring eyes.
-
-### 4. Shake-to-Hide (The Discretion Engine) 🪄
-Security is most effective when it’s instinctive. In high-pressure situations, searching for a "close" button isn't always possible.
-
-![Shake to Hide Demo](./assets/shake-demo.gif)
-
-**How it works:**
-* **Instant Trigger:** Utilizing the device's **Accelerometer** via `expo-sensors`, the app detects rapid, specific movement.
-* **Seamless Transition:** Once a shake is detected, the UI instantly resets to the calculator's "safe state," hiding all sensitive data in milliseconds.
-* **Privacy First:** No camera or microphone permissions are required, maintaining the app's stealth profile and protecting user trust.
-
-### 🏥 Resource & Shelter Directory
-A minimalist, English-interfaced directory providing access to critical Hebrew-language resources.
-* **Internationalized UI:** All controls and navigation are in English for a professional, clean look.
-* **Minimalist Dashboard:** Emergency triggers (Police, 118) are icon-based only, removing identifying text for enhanced stealth.
-* **Dual-Action Header:** Features a "Back to App" navigation and an "Emergency Exit" panic button.
----
-### Serverless Backend (Cloudflare Ecosystem)
-To ensure maximum security and scalability, the app utilizes a full serverless architecture:
-* **Cloudflare Workers:** Serverless functions handling the API bridge between the app and the storage layers.
-* **Cloudflare D1 (SQL Database):** A relational database used to store encrypted user credentials, personal calculator codes, and journal entries.
-* **Cloudflare R2 (Object Storage):** S3-compatible storage for securely hosting images uploaded by users, ensuring no sensitive media is stored on the physical device.
-* **Security:** Implements **Hashing** for passwords and utilizes **Wrangler** for secure environment binding.
-
-See **[Entity Relationship Diagram](docs/ERD.md)** and **[Workshop Diagrams (ERD + Class Diagram)](docs/WORKSHOP_DIAGRAMS.md)** for data model and architecture.
-  
-## 🛠 Tech Stack
-
-* **Framework:** React Native with Expo (Managed Workflow).
-* **Language:** TypeScript for robust, type-safe code.
-* **Sensors:** `expo-sensors` (Accelerometer) for gesture detection.
-* **Security:** `expo-secure-store` for encrypted data persistence.
-* **Navigation:** React Navigation (Stack & Tab navigation).
+Guardian Angel is a covert, cross-platform safety web app (PWA) and native mobile application designed to provide an invisible lifeline for women in high-risk environments and abusive relationships. On the surface, it functions as an everyday, fully operational calculator with a stealth mask. Behind a secret 4-digit PIN, it unlocks a comprehensive, clinically validated safety suite operating with **Zero Digital Footprint**.
 
 ---
 
-## 🚀 Future Roadmap (WIP)
+## 📱 Features & System Architecture
 
-- [x] Core Stealth Calculator UI.
-- [x] Traffic Light Assessment Logic.
-- [x] Shake-to-Hide Integration.
-- [x] Emergency Contact Quick-Dial (Stealth mode).
-- [wip] **UI/UX Refinement:** Polishing the stealth-aesthetic and visual identity to ensure a professional, seamless, and intuitive user experience.
+### 1. Stealth & Security (The Disguise Engine) 🧮
+* **Calculator Mask:** The app opens as a fully functional calculator with a black iOS-style keypad and real mathematical logic. The navigation bar is hidden, and the layout remains strictly Left-to-Right (LTR) across all languages to preserve the disguise.
+* **Hidden Registration & PIN Auth:** First-time users trigger the sign-up flow by entering `1234=`. Registered users enter their custom 4-digit PIN followed by `=` to unlock the dashboard.
+* **Silent Failure on Wrong PIN:** Entering an incorrect PIN simply resets the calculator display to `0` without showing error messages, protecting users under surveillance.
+* **Session Locking:** Returning to the calculator (via the quick exit button `✕` or physical shake) calls `lockSecureSession()`, rendering sensitive data inaccessible until re-authenticated.
+* **Shake-to-Reset (Native):** Utilizing device accelerometer sensors (`expo-sensors`), a quick physical shake immediately resets the UI back to the calculator mask.
+* **Encrypted Storage:** Native devices utilize `expo-secure-store` (Keychain/Keystore) for credentials, tokens, and risk levels, with fallbacks for web `localStorage`.
+
+### 2. Clinical Risk Assessment & Continuous Support 🚦
+* **I-Risk Assessment Questionnaire:** A 13-question screening tool based on the clinical I-Risk model:
+  * **10 Main Questions:** Evaluate relationship control, isolation, and financial monitoring (scored 0–3, max 30).
+  * **3 Critical Questions:** Focus on violence escalation, choking/weapons, and death threats.
+  * **Zero-Tolerance Rule:** Any positive answer to a critical question automatically forces a **Red Status**.
+* **Traffic Light Guidance System:**
+  * **Green (≤ 7):** Low risk — focus on personal empowerment.
+  * **Yellow (8–18):** Warning signs — preparation mode.
+  * **Red (≥ 19):** High risk — emergency protocols activated.
+* **Daily Mood Check-in & Safety Pipeline:** Color-coded check-ins track emotional trends over time. If enabled, 4 days of user inactivity triggers a quiet reminder notification. After 6 additional hours without a response, an automated SMS containing an optional Google Maps GPS location link is dispatched to primary trusted contacts.
+
+### 3. AI Evidence Locker & Forensic Documentation 🔐
+* **AI Vision Auto-Description:** When attaching a photo to a journal entry, integrated **Vision AI** automatically analyzes the image and generates a detailed, objective text description of the scene—reducing emotional strain and trauma during crisis moments.
+* **Multimodal Attachments:** Supports text descriptions, photo attachments (camera/gallery), and voice recordings.
+* **SHA-256 Hash Chain:** Each journal entry is cryptographically linked to the previous one via SHA-256 hashes. Editing or tampering with past entries invalidates the chain, ensuring forensic integrity for legal proceedings.
+* **Forensic PDF Export:** Generates a print-ready evidence report complete with all media references and hash chain verification metadata.
+* **Tamper-Evident Controls:** Supports individual entry deletion and bulk clearing with confirmation workflows.
+
+### 4. Crisis Action, Panic Triggers & Resources 🆘
+* **One-Tap Emergency Dialing:** Icon-only panic triggers for Emergency Services (**Police 100**) and Social Welfare (**118**) without identifying labels.
+* **Shelters Directory:** A searchable directory of regional and national Hebrew-language shelters with direct `tel:` dialing.
+* **Panic SMS Trigger:** Configurable emergency SMS workflow supporting custom SOS messaging and one-tap sending to up to 2 saved trusted contacts.
+
+### 5. Exit Fund Vault 💰
+* **Financial Independence Vault:** A simulated secure savings vault in ILS (₪) allowing users to track progress toward escape goals (presets: 1,000 / 5,000 / 10,000 / 50,000 ₪).
+* **Round-Up Savings Simulation:** Simulates daily spare-change round-ups from mock purchases.
+* **Emergency Protocol (Red Status):** Auto-transfers funds from main accounts to the emergency exit vault until safety goals are met or funds run out. Includes a **"Safe Now"** toggle to downgrade status.
+
 ---
+
+## 🌐 Localization & Accessibility
+
+* **Trilingual Support:** Full UI internationalization via `i18next` supporting **English, Hebrew, and Arabic**.
+* **Dynamic RTL / LTR Handling:**
+  * Hebrew and Arabic dynamically enforce Right-to-Left (RTL) text alignment and UI direction.
+  * The **Calculator Disguise remains LTR intentionally** across all locales to maintain uniform appearance.
+
+---
+
+## 🛠 Tech Stack & Infrastructure
+
+* **Frontend Framework:** React Native with Expo SDK 54 (Managed Workflow), Expo Router (file-based navigation), React 19, and TypeScript.
+* **Deployment Platforms:** Cross-platform iOS, Android, and Progressive Web App (PWA) deployed as a static export to **Cloudflare Pages**.
+* **Serverless Backend (Cloudflare Ecosystem):**
+  * **Cloudflare Workers:** Serverless API endpoints handling JWT authentication, password hashing with server-side salt, and route protection.
+  * **Cloudflare D1:** Relational SQL database storing user credentials, hashed codes, and application logs.
+  * **Cloudflare R2:** S3-compatible object storage for secure off-device image and media persistence.
+
+| Data Type | Native Storage | Web Storage |
+| :--- | :--- | :--- |
+| **Auth Credentials & PIN** | `SecureStore` (Encrypted) | `localStorage` |
+| **Risk Status & Exit Fund** | `SecureStore` | `SecureStore` Shim |
+| **Evidence Journal & Hashes** | `AsyncStorage` | `localStorage` |
+| **Mood Check-ins & Settings** | `AsyncStorage` | `AsyncStorage` |
+
+---
+
+## 🎓 Academic & Clinical Collaboration
+
+Developed as an academic capstone project in collaboration with leading clinical, legal, and social work experts:
+* **Dr. Uri Globus** — Mentor & Academic Advisor
+* **Dana Savoray** — Human Rights Attorney
+* **Juman Akhbaria** — Clinical Psychologist
+* **Ghada Jehleb** — Senior Social Worker
+
+**Project Authors:** Hadeel Mahamid & Nour Guty (Project Number: P2401)
