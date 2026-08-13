@@ -539,26 +539,38 @@ export default function HomeScreen() {
     }
   };
 
+  const clearAllJournalEntriesConfirmed = async () => {
+    const persisted = await persistJournalEntries([]);
+    if (!persisted) return;
+    setJournalEntries([]);
+    setIncidentDescription('');
+    setSelectedJournalImage(null);
+    setSelectedJournalImageName('');
+    setSelectedJournalAudio(null);
+    setSelectedJournalAudioDuration(0);
+    if (Platform.OS === 'web' && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const clearAllJournalEntries = () => {
-    Alert.alert('Clear all entries?', 'This will permanently delete all local journal entries.', [
+    const title = 'Clear all entries?';
+    const message = 'This will permanently delete all local journal entries.';
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) {
+        void clearAllJournalEntriesConfirmed();
+      }
+      return;
+    }
+
+    Alert.alert(title, message, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Clear',
         style: 'destructive',
         onPress: () => {
-          void (async () => {
-            const persisted = await persistJournalEntries([]);
-            if (!persisted) return;
-            setJournalEntries([]);
-            setIncidentDescription('');
-            setSelectedJournalImage(null);
-            setSelectedJournalImageName('');
-            setSelectedJournalAudio(null);
-            setSelectedJournalAudioDuration(0);
-            if (Platform.OS === 'web' && fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-          })();
+          void clearAllJournalEntriesConfirmed();
         },
       },
     ]);
