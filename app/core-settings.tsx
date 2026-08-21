@@ -1,6 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { Fonts, Palette, Radii, Shadow } from '@/constants/theme';
 import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { getEmergencyContact, saveEmergencyContact } from '@/src/emergency-contact';
 import { disableSafetyCheckinSchedules } from '@/src/mood-checkin/pipeline';
@@ -103,12 +105,12 @@ export default function CoreSettingsScreen() {
   };
 
   return (
-    <LinearGradient colors={['#E8F5E9', '#FAF3E0']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
+    <LinearGradient colors={[Palette.bgPeach, Palette.bgCream]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
       <SafeAreaView style={[styles.container, { direction }]}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityRole="button">
-              <Text style={styles.backButtonText}>←</Text>
+              <ArrowLeft size={17} color={Palette.inkSoft} strokeWidth={2.25} />
             </TouchableOpacity>
             <Text style={styles.title}>{t('panic.settings.title')}</Text>
           </View>
@@ -121,7 +123,7 @@ export default function CoreSettingsScreen() {
               onChangeText={setName}
               placeholder={t('panic.settings.namePlaceholder')}
               style={styles.input}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
             />
             <Text style={styles.label}>{t('panic.settings.phoneLabel')}</Text>
             <TextInput
@@ -130,7 +132,7 @@ export default function CoreSettingsScreen() {
               keyboardType="phone-pad"
               placeholder={t('panic.settings.phonePlaceholder')}
               style={styles.input}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
             />
             <Text style={styles.label}>{t('panic.settings.emailLabel')}</Text>
             <TextInput
@@ -140,7 +142,7 @@ export default function CoreSettingsScreen() {
               autoCapitalize="none"
               placeholder={t('panic.settings.emailPlaceholder')}
               style={styles.input}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
             />
 
             <TouchableOpacity
@@ -161,8 +163,8 @@ export default function CoreSettingsScreen() {
               <Switch
                 value={safetyCheckinEnabled}
                 onValueChange={(v) => void onToggleAutomatedSos(v)}
-                trackColor={{ false: '#d1d5db', true: '#86efac' }}
-                thumbColor={safetyCheckinEnabled ? '#15803d' : '#f4f4f5'}
+                trackColor={{ false: Palette.border, true: Palette.sageSoft }}
+                thumbColor={safetyCheckinEnabled ? Palette.sage : Palette.surface}
                 accessibilityLabel={t('moodCheckin.settingsConsentLabel')}
               />
             </View>
@@ -172,7 +174,7 @@ export default function CoreSettingsScreen() {
               value={presetSosMessage}
               onChangeText={setPresetSosMessage}
               placeholder={t('moodCheckin.presetSosMessagePlaceholder')}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
               style={[styles.input, styles.safetyMessageInput, rtlText]}
               multiline
               textAlignVertical="top"
@@ -212,56 +214,52 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: Radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Palette.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#374151',
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   title: {
     flex: 1,
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Fonts.serif,
+    fontStyle: 'italic',
+    fontWeight: '600',
     textAlign: 'left',
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: Palette.surface,
+    borderRadius: Radii.xl,
     padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: Palette.border,
+    ...Shadow.soft,
   },
   subtitle: {
-    color: '#4B5563',
+    color: Palette.inkMuted,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 14,
   },
   label: {
-    color: '#374151',
+    color: Palette.inkSoft,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d3dee8',
-    backgroundColor: '#f8fbff',
-    color: '#1f2937',
-    borderRadius: 12,
+    borderColor: Palette.border,
+    backgroundColor: Palette.surfaceTinted,
+    color: Palette.ink,
+    borderRadius: Radii.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -269,25 +267,23 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 8,
-    borderRadius: 14,
-    backgroundColor: '#b91c1c',
+    borderRadius: Radii.pill,
+    backgroundColor: Palette.primaryDeep,
     paddingVertical: 14,
-    shadowColor: '#7f1d1d',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    ...Shadow.lift,
   },
   saveButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   saveButtonText: {
     textAlign: 'center',
-    color: '#fff',
-    fontWeight: '800',
+    color: Palette.onPrimary,
+    fontWeight: '700',
     fontSize: 14,
+    letterSpacing: 0.3,
   },
   safetySectionTitle: {
-    color: '#2D3436',
+    color: Palette.ink,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 12,
@@ -302,13 +298,13 @@ const styles = StyleSheet.create({
   switchLabel: {
     flex: 1,
     flexShrink: 1,
-    color: '#374151',
+    color: Palette.inkSoft,
     fontSize: 13,
     fontWeight: '600',
     lineHeight: 19,
   },
   safetyExplainer: {
-    color: '#6b7280',
+    color: Palette.inkMuted,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,

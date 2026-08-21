@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { HouseHeart, PiggyBank, Receipt, RefreshCw, ShieldAlert, Target, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -246,20 +247,20 @@ export default function ExitFundScreen() {
             style={styles.headerIconButton}
             onPress={() => router.replace('/(tabs)')}
             accessibilityLabel="Exit">
-            <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
+            <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.balanceCard}>
           <View style={styles.balanceCardHeader}>
-            <Text style={styles.balanceEmoji}>💰</Text>
+            <PiggyBank size={20} color={Palette.primaryDeep} strokeWidth={2} />
             <Text style={styles.balanceLabel}>{t('exitFund.financialOxygen')}</Text>
           </View>
           <View style={styles.balanceRow}>
             <Text style={styles.balance}>{balanceLabel}</Text>
             {isEmergencyActive ? (
               <View style={styles.processingWrap}>
-                <ActivityIndicator size="small" color="#b45309" />
+                <ActivityIndicator size="small" color={Palette.gold} />
                 <Text style={styles.processingText}>{t('common.processing')}</Text>
               </View>
             ) : null}
@@ -275,7 +276,7 @@ export default function ExitFundScreen() {
         {isEmergencyActive ? (
           <View style={styles.emergencyBanner}>
             <View style={styles.emergencyBannerRow}>
-              <Text style={styles.emergencyBannerEmoji}>🚨</Text>
+              <ShieldAlert size={19} color={Palette.statusRedInk} strokeWidth={2.25} />
               <Text style={styles.emergencyBannerText}>
                 {t('exitFund.emergencyActive')}
               </Text>
@@ -288,7 +289,7 @@ export default function ExitFundScreen() {
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionEmoji}>🎯</Text>
+            <Target size={17} color={Palette.primaryDeep} strokeWidth={2} />
             <Text style={styles.sectionTitle}>{t('exitFund.targetBuffer')}</Text>
           </View>
           <Text style={styles.helperText}>{t('exitFund.targetHint')}</Text>
@@ -299,7 +300,7 @@ export default function ExitFundScreen() {
               keyboardType="number-pad"
               style={styles.limitInput}
               placeholder={t('exitFund.targetPlaceholder')}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
             />
             <TouchableOpacity style={styles.limitSaveButton} onPress={() => void saveTargetLimit(targetInput)}>
               <Text style={styles.limitSaveButtonText}>{t('common.save')}</Text>
@@ -325,7 +326,7 @@ export default function ExitFundScreen() {
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionEmoji}>🔄</Text>
+            <RefreshCw size={16} color={Palette.primaryDeep} strokeWidth={2} />
             <Text style={styles.sectionTitle}>{t('exitFund.roundupHistory')}</Text>
           </View>
           {MOCK_PURCHASES.map((purchase) => {
@@ -352,7 +353,7 @@ export default function ExitFundScreen() {
 
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionEmoji}>📊</Text>
+            <Receipt size={16} color={Palette.primaryDeep} strokeWidth={2} />
             <Text style={styles.sectionTitle}>{t('exitFund.simulatedTransactions')}</Text>
           </View>
           <View style={styles.customTransactionRow}>
@@ -362,7 +363,7 @@ export default function ExitFundScreen() {
               keyboardType="numeric"
               style={styles.transactionInput}
               placeholder={t('exitFund.customAmountPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={Palette.inkFaint}
             />
             <TouchableOpacity style={styles.actionButton} onPress={() => void applyCustomTransaction()}>
               <Text style={styles.actionButtonText}>{t('common.apply')}</Text>
@@ -384,7 +385,7 @@ export default function ExitFundScreen() {
         </View>
 
         <TouchableOpacity style={styles.backToZoneButton} onPress={handleBack}>
-          <Text style={{ fontSize: 16, color: '#FFFFFF', lineHeight: 16 }}>🏠</Text>
+          <HouseHeart size={18} color="#FFFFFF" strokeWidth={2} />
           <Text style={styles.backToZoneText}>{t('exitFund.backSafeZone')}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -461,9 +462,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 10,
-  },
-  balanceEmoji: {
-    fontSize: 18,
   },
   balanceLabel: {
     fontSize: 11,
@@ -546,9 +544,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  emergencyBannerEmoji: {
-    fontSize: 18,
-  },
   emergencyBannerText: {
     flex: 1,
     color: Palette.emergencyDeep,
@@ -587,9 +582,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 12,
-  },
-  sectionEmoji: {
-    fontSize: 16,
   },
   sectionTitle: {
     fontSize: 16,

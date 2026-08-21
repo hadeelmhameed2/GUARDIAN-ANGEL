@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowLeft, ChevronRight, Diamond, ShieldAlert, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { getCurrentStatus, resolveAssessmentStatus, setCurrentStatus } from './risk-status';
 import { useShakeHide } from '../hooks/use-shake-hide';
@@ -42,8 +43,8 @@ const OPTIONS: { key: RiskAnswerKey; points: number }[] = [
 ];
 
 const CATEGORY_THEME = {
-  screening: { bg: Palette.goldSoft, color: Palette.statusYellowInk, emoji: '◆' },
-  critical: { bg: Palette.roseSoft, color: Palette.statusRedInk, emoji: '⚠️' },
+  screening: { bg: Palette.goldSoft, color: Palette.statusYellowInk, Icon: Diamond },
+  critical: { bg: Palette.roseSoft, color: Palette.statusRedInk, Icon: ShieldAlert },
 } as const;
 
 const PAGE_GRADIENTS = PageGradient;
@@ -115,14 +116,14 @@ export default function AssessmentScreen() {
     <SafeAreaView style={[styles.container, { direction }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
-          <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
+          <ArrowLeft size={18} color={Palette.inkSoft} strokeWidth={2.25} />
         </TouchableOpacity>
         <Text style={[styles.title, rtlWriting]}>{t('assessment.title')}</Text>
         <TouchableOpacity
           style={styles.headerIconButton}
           onPress={() => router.replace('/(tabs)')}
           accessibilityLabel="Exit">
-          <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
+          <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
         </TouchableOpacity>
       </View>
 
@@ -133,7 +134,7 @@ export default function AssessmentScreen() {
       <View style={styles.card}>
         <View style={styles.questionHeader}>
           <View style={[styles.categoryBadge, { backgroundColor: categoryTheme.bg }]}>
-            <Text style={styles.categoryEmoji}>{categoryTheme.emoji}</Text>
+            <categoryTheme.Icon size={13} color={categoryTheme.color} strokeWidth={2.25} />
             <Text style={[styles.categoryText, { color: categoryTheme.color }, rtlText]}>
               {t(`assessment.categories.${currentQuestion.category}`)}
             </Text>
@@ -151,7 +152,7 @@ export default function AssessmentScreen() {
             activeOpacity={0.75}
             onPress={() => void handleAnswer(option.key)}>
             <Text style={[styles.buttonText, rtlText]}>{t(`assessment.options.${option.key}`)}</Text>
-            <Text style={{ fontSize: 18, color: Palette.primary, lineHeight: 18 }}>▶</Text>
+            <ChevronRight size={18} color={Palette.primary} strokeWidth={2.25} />
           </TouchableOpacity>
         ))}
       </View>
@@ -237,9 +238,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-  },
-  categoryEmoji: {
-    fontSize: 12,
   },
   categoryText: {
     fontSize: 11,

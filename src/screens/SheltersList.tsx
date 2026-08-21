@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { ArrowLeft, MapPin, Phone, Search, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -84,7 +85,7 @@ export default function SheltersListScreen() {
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={{ fontSize: 12, color: Palette.inkMuted, lineHeight: 12 }}>📍</Text>
+        <MapPin size={13} color={Palette.inkMuted} strokeWidth={2} />
         <Text style={styles.metaText}>
           {item.city}
           <Text style={styles.metaDivider}>  ·  </Text>
@@ -98,7 +99,7 @@ export default function SheltersListScreen() {
         onPress={() => void handleCall(item.phone)}
         accessibilityRole="button"
         accessibilityLabel={`Call ${item.name}`}>
-        <Text style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 14 }}>📞</Text>
+        <Phone size={15} color="#FFFFFF" strokeWidth={2.25} />
         <Text style={styles.callButtonText}>Call Now</Text>
       </TouchableOpacity>
     </View>
@@ -117,7 +118,7 @@ export default function SheltersListScreen() {
           onPress={handleBackToDashboard}
           accessibilityRole="button"
           accessibilityLabel="Back to App">
-          <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
+          <ArrowLeft size={18} color={Palette.inkSoft} strokeWidth={2.25} />
         </TouchableOpacity>
         <View style={styles.titleWrap}>
           <Text style={styles.eyebrow}>Resources</Text>
@@ -128,13 +129,13 @@ export default function SheltersListScreen() {
           onPress={handleQuickExit}
           accessibilityRole="button"
           accessibilityLabel="Emergency Exit">
-          <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
+          <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchWrap}>
         <View style={styles.searchInputWrap}>
-          <Text style={[styles.searchIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔍</Text>
+          <Search size={16} color={Palette.inkMuted} strokeWidth={2} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             value={query}
@@ -159,7 +160,7 @@ export default function SheltersListScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
-              <Text style={{ fontSize: 28, color: Palette.primary, lineHeight: 28 }}>🔍</Text>
+              <Search size={26} color={Palette.primary} strokeWidth={2} />
             </View>
             <Text style={styles.emptyTitle}>No matching resources</Text>
             <Text style={styles.emptySubtitle}>Try another city or region.</Text>

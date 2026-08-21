@@ -17,6 +17,30 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  Heart,
+  HouseHeart,
+  ImagePlus,
+  Leaf,
+  Link2,
+  Lock,
+  Mic,
+  Phone,
+  Settings,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Square,
+  User,
+  X,
+} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import {
   getCurrentStatus,
@@ -746,20 +770,23 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.supportActionButton}
               onPress={() => void openDialer('100', t('homeScreen.support.fallbackPolice'))}>
-              <Text style={[styles.supportActionText, rtlText]}>🚨 {t('homeScreen.support.police')}</Text>
+              <ShieldAlert size={17} color={Palette.primaryDeep} strokeWidth={2} />
+              <Text style={[styles.supportActionText, rtlText]}>{t('homeScreen.support.police')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.supportActionButton}
               onPress={() => void openDialer('118', t('homeScreen.support.fallbackHotline'))}>
-              <Text style={[styles.supportActionText, rtlText]}>🛡️ {t('homeScreen.support.hotline')}</Text>
+              <Shield size={17} color={Palette.primaryDeep} strokeWidth={2} />
+              <Text style={[styles.supportActionText, rtlText]}>{t('homeScreen.support.hotline')}</Text>
             </TouchableOpacity>
             {trustedContacts.map((contact, index) => (
               <TouchableOpacity
                 key={`support-contact-${index}`}
                 style={styles.supportActionButton}
                 onPress={() => void openDialer(contact.phone, t('homeScreen.support.fallbackInvalidContact'))}>
+                <User size={17} color={Palette.primaryDeep} strokeWidth={2} />
                 <Text style={[styles.supportActionText, rtlText]}>
-                  👤 {contact.name || t('homeScreen.support.customContact', { index: index + 1 })}
+                  {contact.name || t('homeScreen.support.customContact', { index: index + 1 })}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -772,14 +799,14 @@ export default function HomeScreen() {
                 value={trustedContactName}
                 onChangeText={setTrustedContactName}
                 placeholder={t('homeScreen.support.trustedNamePlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={Palette.inkFaint}
               />
               <TextInput
                 style={[styles.contactInput, rtlText]}
                 value={trustedContactPhone}
                 onChangeText={setTrustedContactPhone}
                 placeholder={t('homeScreen.support.trustedPhonePlaceholder')}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={Palette.inkFaint}
                 keyboardType="phone-pad"
               />
               <TouchableOpacity style={styles.contactSaveButton} onPress={() => void saveTrustedContact()}>
@@ -833,7 +860,7 @@ export default function HomeScreen() {
             </View>
             {SAFETY_TIPS.map((tipKey) => (
               <View key={tipKey} style={styles.safetyTipRow}>
-                <Text style={styles.safetyTipIcon}>🛡️</Text>
+                <ShieldCheck size={22} color={Palette.primaryDeep} strokeWidth={2} />
                 <Text style={[styles.safetyTipText, rtlText]}>{t(tipKey)}</Text>
               </View>
             ))}
@@ -857,7 +884,7 @@ export default function HomeScreen() {
               value={panicPhoneNumber}
               onChangeText={setPanicPhoneNumber}
               placeholder={t('panic.setup.phonePlaceholder')}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
               keyboardType="phone-pad"
             />
             <TextInput
@@ -865,7 +892,7 @@ export default function HomeScreen() {
               value={panicMessage}
               onChangeText={setPanicMessage}
               placeholder={t('panic.setup.messagePlaceholder')}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Palette.inkFaint}
               multiline
               textAlignVertical="top"
             />
@@ -945,7 +972,7 @@ export default function HomeScreen() {
           <View style={styles.journalPage}>
             <View style={styles.journalPageHeader}>
               <TouchableOpacity style={styles.backButton} onPress={() => setShowJournalModal(false)}>
-                <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
+                <ArrowLeft size={19} color={Palette.inkSoft} strokeWidth={2.25} />
               </TouchableOpacity>
               <Text style={[styles.journalPageTitle, rtlText]}>{t('homeScreen.journal.pageTitle')}</Text>
               <TouchableOpacity
@@ -953,7 +980,7 @@ export default function HomeScreen() {
                 onPress={() => void exportEvidencePdf()}
                 disabled={isExportingEvidence}
                 accessibilityLabel="Export evidence PDF">
-                <Text style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 14 }}>📄</Text>
+                <FileText size={14} color="#FFFFFF" strokeWidth={2.25} />
                 <Text style={[styles.journalExportButtonText, rtlText]}>
                   {isExportingEvidence ? t('homeScreen.journal.exporting') : t('homeScreen.journal.export')}
                 </Text>
@@ -982,20 +1009,17 @@ export default function HomeScreen() {
               : null}
             <View style={styles.journalAttachRow}>
               <TouchableOpacity style={styles.journalAttachButton} onPress={openImagePicker}>
-                <Text style={{ fontSize: 15, color: Palette.primaryDeep, lineHeight: 15 }}>🖼️</Text>
+                <ImagePlus size={16} color={Palette.primaryDeep} strokeWidth={2} />
                 <Text style={[styles.journalAttachButtonText, rtlText]}>{t('homeScreen.journal.addImage')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.journalAttachButton, isRecordingAudio && styles.journalAttachButtonRecording]}
                 onPress={() => (isRecordingAudio ? stopAudioRecording() : void startAudioRecording())}>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    color: isRecordingAudio ? '#FFFFFF' : Palette.primaryDeep,
-                    lineHeight: 15,
-                  }}>
-                  {isRecordingAudio ? '⏹️' : '🎤'}
-                </Text>
+                {isRecordingAudio ? (
+                  <Square size={15} color="#FFFFFF" strokeWidth={2} fill="#FFFFFF" />
+                ) : (
+                  <Mic size={16} color={Palette.primaryDeep} strokeWidth={2} />
+                )}
                 <Text
                   style={[
                     styles.journalAttachButtonText,
@@ -1009,7 +1033,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.journalSaveButton} onPress={() => void saveJournalEntry()}>
-              <Text style={{ fontSize: 15, color: '#FFFFFF', lineHeight: 15 }}>✓</Text>
+              <Check size={16} color="#FFFFFF" strokeWidth={2.5} />
               <Text style={[styles.journalSaveButtonText, rtlText]}>{t('homeScreen.journal.saveEntry')}</Text>
             </TouchableOpacity>
             {selectedJournalImage ? (
@@ -1030,7 +1054,7 @@ export default function HomeScreen() {
                         fileInputRef.current.value = '';
                       }
                     }}>
-                    <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
+                    <X size={16} color={Palette.inkMuted} strokeWidth={2.25} />
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity
@@ -1050,9 +1074,12 @@ export default function HomeScreen() {
                       </Text>
                     </>
                   ) : (
-                    <Text style={[styles.journalAiGenerateButtonText, rtlText]}>
-                      ✨ {t('homeScreen.journal.generateAiDescription')}
-                    </Text>
+                    <>
+                      <Sparkles size={15} color={Palette.primaryDeep} strokeWidth={2} />
+                      <Text style={[styles.journalAiGenerateButtonText, rtlText]}>
+                        {t('homeScreen.journal.generateAiDescription')}
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
                 {captionError ? (
@@ -1065,7 +1092,7 @@ export default function HomeScreen() {
             {selectedJournalAudio ? (
               <View style={styles.journalSelectedAudioRow}>
                 <View style={styles.journalSelectedAudioIcon}>
-                  <Text style={{ fontSize: 14, color: Palette.primaryDeep, lineHeight: 14 }}>🎤</Text>
+                  <Mic size={15} color={Palette.primaryDeep} strokeWidth={2} />
                 </View>
                 <View style={styles.journalSelectedAudioBody}>
                   {Platform.OS === 'web'
@@ -1081,7 +1108,7 @@ export default function HomeScreen() {
                     )}
                 </View>
                 <TouchableOpacity onPress={clearSelectedAudio}>
-                  <Text style={{ fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }}>✕</Text>
+                  <X size={16} color={Palette.inkMuted} strokeWidth={2.25} />
                 </TouchableOpacity>
               </View>
             ) : null}
@@ -1114,7 +1141,7 @@ export default function HomeScreen() {
                       : null}
                   {entry.entryHash ? (
                     <View style={styles.journalEntryHashRow}>
-                      <Text style={{ fontSize: 12, color: Palette.inkFaint, lineHeight: 12 }}>🔗</Text>
+                      <Link2 size={12} color={Palette.inkFaint} strokeWidth={2} />
                       <Text style={styles.journalEntryHash} numberOfLines={1}>
                         {entry.entryHash.slice(0, 16)}…
                       </Text>
@@ -1131,7 +1158,7 @@ export default function HomeScreen() {
           <>
             <View style={styles.headerRow}>
               <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityLabel="Back">
-                <Text style={{ fontSize: 22, color: Palette.inkSoft, lineHeight: 22 }}>◀</Text>
+                <ArrowLeft size={19} color={Palette.inkSoft} strokeWidth={2.25} />
               </TouchableOpacity>
               <View style={styles.headerRightActions}>
                 <LanguageSwitcher />
@@ -1139,7 +1166,7 @@ export default function HomeScreen() {
                   style={styles.quickExitButton}
                   onPress={exitToCalculator}
                   accessibilityLabel="Exit">
-                  <Text style={{ fontSize: 18, color: Palette.inkSoft, lineHeight: 18 }}>✕</Text>
+                  <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1149,7 +1176,7 @@ export default function HomeScreen() {
               <Text style={[styles.welcomeTitle, rtlWriting]}>{t('homeScreen.welcomeHeld')}</Text>
               <View style={styles.welcomeOrnament}>
                 <View style={styles.welcomeOrnamentLine} />
-                <Text style={{ fontSize: 11, color: Palette.primary, lineHeight: 11 }}>❤️</Text>
+                <Heart size={11} color={Palette.primary} fill={Palette.primary} strokeWidth={0} />
                 <View style={styles.welcomeOrnamentLine} />
               </View>
             </View>
@@ -1192,7 +1219,7 @@ export default function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t('moodCheckin.boxTitle')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.roseSoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🌿</Text>
+                    <Leaf size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('moodCheckin.boxTitle')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]}>{t('moodCheckin.boxDescription')}</Text>
@@ -1246,7 +1273,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardSmall}
                   onPress={() => setShowSafetyTipsModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🛡️</Text>
+                    <ShieldCheck size={22} color={Palette.sage} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.securityTipsTitle')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]} numberOfLines={3}>
@@ -1258,7 +1285,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardWide}
                   onPress={() => router.push('/assessment')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📋</Text>
+                    <ClipboardList size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.startAssessmentTitle')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]} numberOfLines={3}>
@@ -1266,7 +1293,7 @@ export default function HomeScreen() {
                   </Text>
                   <View style={styles.bentoCardCTA}>
                     <Text style={[styles.bentoCardCTAText, rtlText]}>{t('homeScreen.actions.startQuiz')}</Text>
-                    <Text style={{ fontSize: 13, color: '#FFFFFF', lineHeight: 13 }}>→</Text>
+                    <ChevronRight size={14} color="#FFFFFF" strokeWidth={2.5} />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -1276,7 +1303,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => setShowSupportModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.surfaceTinted }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📞</Text>
+                    <Phone size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.support.title')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]}>
@@ -1287,7 +1314,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => router.push('/shelters')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.goldSoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🏠</Text>
+                    <HouseHeart size={22} color={Palette.gold} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.shelters')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]}>
@@ -1303,7 +1330,7 @@ export default function HomeScreen() {
                 accessibilityLabel={t('panic.triggerTitle')}>
                 <View style={styles.bentoEmergencyContent}>
                   <View style={styles.bentoEmergencyIconWrap}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>⚠️</Text>
+                    <ShieldAlert size={22} color="#FFFFFF" strokeWidth={2.25} />
                   </View>
                   <View style={styles.bentoEmergencyTextWrap}>
                     <Text style={[styles.bentoEmergencyTitle, rtlText]}>{t('panic.triggerTitle')}</Text>
@@ -1311,12 +1338,12 @@ export default function HomeScreen() {
                       {isTriggeringEmergency ? t('panic.triggering') : t('panic.triggerDescription')}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#FFFFFF', lineHeight: 20 }}>→</Text>
+                  <ChevronRight size={19} color="#FFFFFF" strokeWidth={2.5} />
                 </View>
                 <TouchableOpacity
                   style={styles.bentoEmergencySetup}
                   onPress={() => setShowPanicSettingsModal(true)}>
-                  <Text style={{ fontSize: 11, color: '#FFFFFF', lineHeight: 11 }}>⚙️</Text>
+                  <Settings size={12} color="#FFFFFF" strokeWidth={2.25} />
                   <Text style={[styles.bentoEmergencySetupText, rtlText]}>{t('panic.setup.open')}</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -1326,7 +1353,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => router.push('/exit_fund')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>🔒</Text>
+                    <Lock size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.secureResources')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]}>
@@ -1337,7 +1364,7 @@ export default function HomeScreen() {
                   style={styles.bentoCardEqual}
                   onPress={() => setShowJournalModal(true)}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.sageSoft }]}>
-                    <Text style={{ fontSize: 24, lineHeight: 24 }}>📖</Text>
+                    <BookOpen size={22} color={Palette.sage} strokeWidth={2} />
                   </View>
                   <Text style={[styles.bentoCardTitle, rtlText]}>{t('homeScreen.actions.journalTitle')}</Text>
                   <Text style={[styles.bentoCardDescription, rtlText]}>
@@ -1952,6 +1979,9 @@ const styles = StyleSheet.create({
     writingDirection: 'ltr',
   },
   supportActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     borderWidth: 1,
     borderColor: Palette.border,
     borderRadius: 16,
@@ -1961,6 +1991,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   supportActionText: {
+    flex: 1,
     color: Palette.ink,
     fontSize: 14,
     fontWeight: '600',
@@ -2014,10 +2045,6 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.surfaceTinted,
     borderRadius: 14,
     padding: 12,
-  },
-  safetyTipIcon: {
-    fontSize: 24,
-    lineHeight: 28,
   },
   safetyTipText: {
     flex: 1,

@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Eye, EyeOff, Heart, Lock, User, X } from 'lucide-react-native';
 import { unlockSecureDataWithPin } from '../risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch, isApiConfigured } from '@/src/api';
@@ -427,7 +428,7 @@ export default function CalculatorMaskScreen() {
                 style={styles.authCloseButton}
                 onPress={closeAuthPanel}
                 accessibilityLabel="Close">
-                <Text style={{ fontSize: 20, color: Palette.inkSoft, lineHeight: 20 }}>✕</Text>
+                <X size={18} color={Palette.inkSoft} strokeWidth={2.25} />
               </TouchableOpacity>
             </View>
 
@@ -437,7 +438,7 @@ export default function CalculatorMaskScreen() {
               showsVerticalScrollIndicator={false}>
               <View style={styles.authHeader}>
                 <View style={styles.authBrandIcon}>
-                  <Text style={{ fontSize: 28, color: Palette.primary, lineHeight: 28 }}>❤️</Text>
+                  <Heart size={28} color={Palette.primary} fill={Palette.primary} strokeWidth={0} />
                 </View>
                 <Text style={styles.authHeaderTitle}>{authHeaderTitle}</Text>
                 <Text style={styles.authHeaderSubtitle}>{authHeaderSubtitle}</Text>
@@ -445,7 +446,7 @@ export default function CalculatorMaskScreen() {
 
               <View style={styles.authForm}>
                 <View style={styles.authFieldWrap}>
-                  <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>👤</Text>
+                  <User size={17} color={Palette.inkMuted} strokeWidth={2} style={styles.authFieldIcon} />
                   <TextInput
                     style={styles.authField}
                     placeholder="Username"
@@ -459,7 +460,7 @@ export default function CalculatorMaskScreen() {
 
                 <View style={styles.authPinFieldGroup}>
                   <View style={[styles.authFieldWrap, errorMessage ? styles.authFieldWrapError : null]}>
-                    <Text style={[styles.authFieldIcon, { fontSize: 16, color: Palette.inkMuted, lineHeight: 16 }]}>🔒</Text>
+                    <Lock size={17} color={Palette.inkMuted} strokeWidth={2} style={styles.authFieldIcon} />
                     <TextInput
                       style={styles.authField}
                       placeholder="Enter 4-digit PIN"
@@ -474,9 +475,11 @@ export default function CalculatorMaskScreen() {
                       onPress={() => setShowPassword((prev) => !prev)}
                       accessibilityLabel={showPassword ? 'Hide PIN' : 'Show PIN'}
                       style={styles.authEyeButton}>
-                      <Text style={{ fontSize: 18, color: Palette.inkMuted, lineHeight: 18 }}>
-                        {showPassword ? '🙈' : '👁️'}
-                      </Text>
+                      {showPassword ? (
+                        <EyeOff size={18} color={Palette.inkMuted} strokeWidth={2} />
+                      ) : (
+                        <Eye size={18} color={Palette.inkMuted} strokeWidth={2} />
+                      )}
                     </TouchableOpacity>
                   </View>
                   {errorMessage ? <Text style={styles.authErrorText}>{errorMessage}</Text> : null}

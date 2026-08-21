@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
   Dimensions,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Palette, Radii, Shadow } from '@/constants/theme';
 import { getSupportedLanguages, setAppLanguage, type AppLanguage } from '@/src/i18n';
 
 export function LanguageSwitcher() {
@@ -56,7 +58,7 @@ export function LanguageSwitcher() {
   return (
     <View ref={triggerRef} style={styles.container}>
       <TouchableOpacity style={styles.iconButton} onPress={toggleMenu} accessibilityRole="button">
-        <Text style={styles.iconText}>🌐</Text>
+        <Globe size={16} color={Palette.inkSoft} strokeWidth={2} />
       </TouchableOpacity>
       <Modal visible={isOpen} transparent animationType="none" onRequestClose={() => setIsOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
@@ -91,50 +93,43 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: Radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(248,250,252,0.82)',
+    backgroundColor: 'rgba(255,252,249,0.82)',
     borderWidth: 1,
-    borderColor: '#dbe4ec',
-  },
-  iconText: {
-    fontSize: 15,
-    opacity: 0.84,
+    borderColor: Palette.border,
   },
   dropdown: {
     position: 'absolute',
     width: 170,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: Palette.surface,
+    borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Palette.border,
     padding: 6,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    ...Shadow.lift,
   },
   optionButton: {
-    borderRadius: 8,
+    borderRadius: Radii.xs,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   optionButtonActive: {
-    backgroundColor: '#e5f0ff',
+    backgroundColor: Palette.primarySoft,
   },
   optionText: {
-    color: '#475569',
+    color: Palette.inkSoft,
     fontSize: 13,
     fontWeight: '700',
   },
   optionTextActive: {
-    color: '#1d4ed8',
+    color: Palette.primaryDeep,
   },
   savingText: {
     marginTop: 4,
     fontSize: 11,
-    color: '#64748b',
+    color: Palette.inkMuted,
     textAlign: 'center',
   },
 });
