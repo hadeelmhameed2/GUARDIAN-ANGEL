@@ -31,7 +31,6 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="core-settings" options={{ title: t('panic.settings.title') }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: t('modal.title') }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

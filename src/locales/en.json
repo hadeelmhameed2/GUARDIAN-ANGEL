@@ -9,12 +9,7 @@
     "processing": "Processing..."
   },
   "tabs": {
-    "home": "Home",
-    "explore": "Explore"
-  },
-  "modal": {
-    "title": "This is a modal",
-    "goHome": "Go to home screen"
+    "home": "Home"
   },
   "language": {
     "label": "Language",
@@ -279,28 +274,5 @@
       "pharmacy": "Pharmacy",
       "coffee": "Coffee"
     }
-  },
-  "explore": {
-    "title": "Explore",
-    "description": "This app includes example code to help you get started.",
-    "routingTitle": "File-based routing",
-    "routingLine1": "This app has two screens:",
-    "routingLine2": "The layout file in",
-    "routingLine3": "sets up the tab navigator.",
-    "learnMore": "Learn more",
-    "platformTitle": "Android, iOS, and web support",
-    "platformDescription": "You can open this project on Android, iOS, and the web. To open the web version, press",
-    "imagesTitle": "Images",
-    "imagesDescription": "For static images, you can use the",
-    "imagesDescriptionTail": "suffixes to provide files for different screen densities",
-    "themeTitle": "Light and dark mode components",
-    "themeDescription": "This template has light and dark mode support. The",
-    "themeDescriptionTail": "hook lets you inspect what the user's current color scheme is, and so you can adjust UI colors accordingly.",
-    "animationsTitle": "Animations",
-    "animationsDescription": "This template includes an example of an animated component. The",
-    "animationsDescriptionTail": "component uses the powerful",
-    "animationsDescriptionEnd": "library to create a waving hand animation.",
-    "iosParallaxDescription": "The",
-    "iosParallaxDescriptionTail": "component provides a parallax effect for the header image."
   }
 }

@@ -9,12 +9,7 @@
     "processing": "מעבד..."
   },
   "tabs": {
-    "home": "בית",
-    "explore": "גילוי"
-  },
-  "modal": {
-    "title": "זהו חלון קופץ",
-    "goHome": "לעבור למסך הבית"
+    "home": "בית"
   },
   "language": {
     "label": "שפה",
@@ -279,28 +274,5 @@
       "pharmacy": "בית מרקחת",
       "coffee": "קפה"
     }
-  },
-  "explore": {
-    "title": "גילוי",
-    "description": "האפליקציה כוללת קוד דוגמה כדי לעזור לך להתחיל.",
-    "routingTitle": "ניווט מבוסס קבצים",
-    "routingLine1": "לאפליקציה הזו יש שני מסכים:",
-    "routingLine2": "קובץ הפריסה ב-",
-    "routingLine3": "מגדיר את ניווט הלשוניות.",
-    "learnMore": "למד/י עוד",
-    "platformTitle": "תמיכה באנדרואיד, iOS ואתר",
-    "platformDescription": "אפשר לפתוח את הפרויקט באנדרואיד, iOS ובווב. כדי לפתוח את גרסת הווב, לחצי על",
-    "imagesTitle": "תמונות",
-    "imagesDescription": "לתמונות סטטיות אפשר להשתמש בסיומות",
-    "imagesDescriptionTail": "כדי לספק קבצים לצפיפויות מסך שונות",
-    "themeTitle": "רכיבי מצב בהיר/כהה",
-    "themeDescription": "לתבנית הזו יש תמיכה במצב בהיר וכהה. הקרס",
-    "themeDescriptionTail": "מאפשר לבדוק את מצב הצבע הנוכחי של המשתמש ולהתאים צבעים בהתאם.",
-    "animationsTitle": "אנימציות",
-    "animationsDescription": "התבנית כוללת דוגמה לרכיב מונפש. הרכיב",
-    "animationsDescriptionTail": "משתמש בספרייה החזקה",
-    "animationsDescriptionEnd": "כדי ליצור אנימציית נופוף יד.",
-    "iosParallaxDescription": "הרכיב",
-    "iosParallaxDescriptionTail": "מספק אפקט פרלקסה לתמונת הכותרת."
   }
 }

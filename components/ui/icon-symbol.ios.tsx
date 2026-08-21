@@ -6,9 +6,6 @@ type IconSymbolName = keyof typeof EMOJI_BY_NAME;
 
 const EMOJI_BY_NAME = {
   'house.fill': '🏠',
-  'paperplane.fill': '✈️',
-  'chevron.left.forwardslash.chevron.right': '💻',
-  'chevron.right': '▶',
 } as const;
 
 /** Same emoji implementation as non-iOS for consistent UI across platforms and web. */

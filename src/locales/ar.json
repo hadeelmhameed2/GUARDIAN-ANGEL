@@ -9,12 +9,7 @@
     "processing": "جارٍ المعالجة..."
   },
   "tabs": {
-    "home": "الرئيسية",
-    "explore": "استكشاف"
-  },
-  "modal": {
-    "title": "هذه نافذة منبثقة",
-    "goHome": "الذهاب إلى الشاشة الرئيسية"
+    "home": "الرئيسية"
   },
   "language": {
     "label": "اللغة",
@@ -279,28 +274,5 @@
       "pharmacy": "صيدلية",
       "coffee": "قهوة"
     }
-  },
-  "explore": {
-    "title": "استكشاف",
-    "description": "يتضمن هذا التطبيق أمثلة كود لمساعدتك على البدء.",
-    "routingTitle": "التوجيه المعتمد على الملفات",
-    "routingLine1": "يحتوي هذا التطبيق على شاشتين:",
-    "routingLine2": "ملف التخطيط في",
-    "routingLine3": "يقوم بإعداد موجه التبويب.",
-    "learnMore": "اعرف المزيد",
-    "platformTitle": "دعم Android وiOS والويب",
-    "platformDescription": "يمكنك فتح هذا المشروع على Android وiOS والويب. لفتح نسخة الويب اضغطي",
-    "imagesTitle": "الصور",
-    "imagesDescription": "للصور الثابتة يمكنك استخدام اللاحقتين",
-    "imagesDescriptionTail": "لتوفير ملفات لكثافات شاشة مختلفة",
-    "themeTitle": "مكونات الوضع الفاتح والداكن",
-    "themeDescription": "هذا القالب يدعم الوضع الفاتح والداكن. تُمكّنك دالة",
-    "themeDescriptionTail": "من معرفة نظام الألوان الحالي للمستخدم لتعديل ألوان الواجهة وفقًا لذلك.",
-    "animationsTitle": "الرسوم المتحركة",
-    "animationsDescription": "يتضمن هذا القالب مثالًا لمكون متحرك. مكون",
-    "animationsDescriptionTail": "يستخدم مكتبة",
-    "animationsDescriptionEnd": "القوية لإنشاء حركة تلويح اليد.",
-    "iosParallaxDescription": "يوفر المكون",
-    "iosParallaxDescriptionTail": "تأثير اختلاف المنظر لصورة الرأس."
   }
 }
