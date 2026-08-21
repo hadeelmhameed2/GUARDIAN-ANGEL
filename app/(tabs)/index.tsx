@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -243,13 +244,6 @@ export default function CalculatorMaskScreen() {
     const hasToken = hasAuthToken(token);
     const personalCode = calculatorCode;
 
-    if (!hasToken && currentExpression === '1234') {
-      setShowAuthPanel(true);
-      setExpression('');
-      setDisplay('0');
-      return;
-    }
-
     if (hasToken && personalCode && isFourDigitPin(currentExpression)) {
       if (currentExpression === personalCode) {
         if (isApiConfigured() && !BYPASS_SERVER_AUTH) {
@@ -277,6 +271,20 @@ export default function CalculatorMaskScreen() {
       setExpression('');
       setDisplay('0');
     }
+  };
+
+  /**
+   * Setup/login is reached by a deliberate long-press on the display, not a
+   * typeable digit sequence — "1234=" is the single most likely thing
+   * anyone would try on a calculator, so it must behave like plain math
+   * (see handleEqualsPress) instead of revealing the app.
+   */
+  const handleDisplayLongPress = async () => {
+    const { token } = await refreshAuthFromStorage();
+    if (hasAuthToken(token)) return;
+    setShowAuthPanel(true);
+    setExpression('');
+    setDisplay('0');
   };
 
   const onPressKey = (key: string) => {
@@ -456,9 +464,12 @@ export default function CalculatorMaskScreen() {
         </LinearGradient>
       </Modal>
 
-      <View style={[styles.displayWrap, { direction: 'ltr' }]}>
+      <Pressable
+        style={[styles.displayWrap, { direction: 'ltr' }]}
+        onLongPress={() => void handleDisplayLongPress()}
+        delayLongPress={1200}>
         <Text style={styles.display}>{display}</Text>
-      </View>
+      </Pressable>
       <View style={[styles.keypad, { direction: 'ltr' }]}>
         {BUTTONS.map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={[styles.row, { direction: 'ltr' }]}>

@@ -5,7 +5,6 @@ import { badRequest, json, methodNotAllowed } from "../../_lib/http";
 type Env = {
   DB: D1Database;
   AUTH_SECRET: string;
-  PASSWORD_SALT: string;
 };
 
 type RegisterBody = {
@@ -52,16 +51,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return badRequest("username already exists");
     }
 
-    const passwordHash = await hashPassword(password, context.env.PASSWORD_SALT);
+    const passwordHash = await hashPassword(password);
     const insert = await context.env.DB.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
       .bind(username, passwordHash)
       .run();
 
     const userId = Number(insert.meta.last_row_id ?? 0);
-    const token = await createToken(
-      { userId, username, calculatorCode: password },
-      context.env.AUTH_SECRET,
-    );
+    const token = await createToken({ sub: userId }, context.env.AUTH_SECRET);
 
     return json({ token, user: { id: userId, username } }, 201);
   } catch (error) {

@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { readSecureItem } from '@/src/secure-storage';
+import { AUTH_CALCULATOR_CODE_KEY, readSecureItem } from '@/src/secure-storage';
 export type RiskState = 'green' | 'yellow' | 'red';
 
 export type ExitFundTransaction = {
@@ -267,10 +267,15 @@ export async function hydrateSecureData() {
   }
 }
 
+/**
+ * Fails closed: if no PIN has been configured yet, or the secure-storage
+ * read errors out, this must deny access rather than fall back to a
+ * default — a swallowed read failure must never be indistinguishable from
+ * "PIN accepted".
+ */
 export async function unlockSecureDataWithPin(pin: string) {
-  const stored = await readSecureItem('ga_calculator_code');
-  const expectedPin = stored ?? '1234';
-  if (pin !== expectedPin) return false;
+  const stored = await readSecureItem(AUTH_CALCULATOR_CODE_KEY);
+  if (!stored || pin !== stored) return false;
   isSecureSessionUnlocked = true;
   await hydrateSecureData();
   return true;

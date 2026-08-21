@@ -46,7 +46,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const bytes = base64ToUint8Array(imageBase64);
   const now = Date.now();
-  const key = body.fileName?.trim() || `journal/${session.userId}/${now}.${extension}`;
+  // Always scope the key under the caller's own namespace — never trust a
+  // client-supplied path segment, or one user could overwrite another
+  // user's evidence file (functions/images/[[path]].ts then enforces that
+  // only this same owner may read it back).
+  const requestedName = body.fileName?.trim().split("/").pop()?.replace(/[^a-zA-Z0-9._-]/g, "") || "";
+  const fileName = requestedName || `${now}.${extension}`;
+  const key = `journal/${session.sub}/${fileName}`;
 
   await context.env.JOURNAL_IMAGES.put(key, bytes, {
     httpMetadata: { contentType },
@@ -60,7 +66,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     key,
     url: publicUrl.toString(),
     contentType,
-    uploadedBy: session.userId,
+    uploadedBy: session.sub,
   });
 };
 

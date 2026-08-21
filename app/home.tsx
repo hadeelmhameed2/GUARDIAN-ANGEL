@@ -45,7 +45,7 @@ import {
   chainHashes,
   type EvidenceJournalEntry,
 } from '@/src/evidence';
-import { readJournalRaw, writeJournalRaw } from '@/src/journal-storage';
+import { readDecryptedJournal, writeEncryptedJournal } from '@/src/journal-storage';
 import { pickJournalImageNative } from '@/src/journal-image';
 import { appendJournalCaption, describeImageErrorMessage, describeJournalImage } from '@/src/journal-ai-caption';
 import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
@@ -212,7 +212,7 @@ export default function HomeScreen() {
         setPanicMessage(settings.emergencyMessage);
       })();
       void (async () => {
-        const raw = await readJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY);
+        const raw = await readDecryptedJournal(EVIDENCE_JOURNAL_STORAGE_KEY);
         if (!raw) {
           setJournalEntries([]);
           return;
@@ -235,7 +235,7 @@ export default function HomeScreen() {
             entry.previousEntryHash !== parsed[idx]?.previousEntryHash,
         );
         if (needsRewrite) {
-          await writeJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
+          await writeEncryptedJournal(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
         }
         setJournalEntries(chained);
       })();
@@ -257,7 +257,7 @@ export default function HomeScreen() {
   };
 
   const persistJournalEntries = async (entries: EvidenceJournalEntry[]) => {
-    const result = await writeJournalRaw(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    const result = await writeEncryptedJournal(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(entries));
     if (!result.ok) {
       if (result.quota) {
         Alert.alert(

@@ -4,6 +4,7 @@ import { withCors } from "./cors";
 type AuthEnv = {
   DB?: D1Database;
   AUTH_SECRET?: string;
+  /** Legacy-only: the old global salt, kept solely to verify not-yet-migrated sha256 hashes. */
   PASSWORD_SALT?: string;
 };
 
@@ -13,9 +14,6 @@ export function requireAuthEnv(env: AuthEnv): Response | null {
   }
   if (!env.AUTH_SECRET?.trim()) {
     return withCors(json({ error: "AUTH_SECRET is not configured" }, 503));
-  }
-  if (!env.PASSWORD_SALT?.trim()) {
-    return withCors(json({ error: "PASSWORD_SALT is not configured" }, 503));
   }
   return null;
 }

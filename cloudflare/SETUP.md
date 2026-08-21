@@ -14,10 +14,11 @@ npx wrangler d1 create guardianangel-db
 
 Copy the returned `database_id` into `wrangler.toml`.
 
-Run migration:
+Run migrations:
 
 ```bash
 npx wrangler d1 execute guardianangel-db --file=cloudflare/migrations/0001_init.sql
+npx wrangler d1 execute guardianangel-db --file=cloudflare/migrations/0002_auth_hardening.sql
 ```
 
 ## 2) Create R2 bucket
@@ -37,8 +38,11 @@ In your Pages project (`guardianangelapp`) -> **Settings** -> **Functions** -> *
   - Variable: `JOURNAL_IMAGES`
   - Bucket: `guardianangel-journal-images`
 - Environment variables:
-  - `AUTH_SECRET` = a long random secret
-  - `PASSWORD_SALT` = another random secret
+  - `AUTH_SECRET` = a long random secret (used to sign session JWTs)
+  - `PASSWORD_SALT` = optional, legacy-only. Only needed temporarily if you have
+    existing users whose password_hash predates the PBKDF2 migration; it lets
+    login verify their old sha256 hash once and transparently upgrade it.
+    New accounts don't use it — each password hash carries its own random salt.
 
 ## 4) Deploy
 
@@ -56,19 +60,25 @@ npx wrangler pages deploy dist --project-name guardianangelapp --branch main
 
 ## 5) Seed one user in D1
 
-Passwords are checked by SHA-256 hash of `PASSWORD_SALT:password`.
-You can generate a hash quickly in browser/Node or with a temporary script.
+Passwords are stored as a self-describing PBKDF2 hash
+(`pbkdf2$<iterations>$<saltBase64>$<hashBase64>`) with a fresh random salt
+per account — generate one with:
+
+```bash
+node scripts/hash-password.mjs 1234
+```
+
 Then insert:
 
 ```sql
 INSERT INTO users (username, password_hash)
-VALUES ('demo_user', 'REPLACE_WITH_SHA256_HEX');
+VALUES ('demo_user', 'REPLACE_WITH_PBKDF2_HASH');
 ```
 
 Execute:
 
 ```bash
-npx wrangler d1 execute guardianangel-db --command "INSERT INTO users (username, password_hash) VALUES ('demo_user','REPLACE_WITH_SHA256_HEX')"
+npx wrangler d1 execute guardianangel-db --command "INSERT INTO users (username, password_hash) VALUES ('demo_user','REPLACE_WITH_PBKDF2_HASH')"
 ```
 
 ## 6) API examples

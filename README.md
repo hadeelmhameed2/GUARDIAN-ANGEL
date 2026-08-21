@@ -9,7 +9,7 @@ Guardian Angel is a covert, cross-platform safety web app (PWA) and native mobil
 
 ### 1. Stealth & Security (The Disguise Engine) 🧮
 * **Calculator Mask:** The app opens as a fully functional calculator with a black iOS-style keypad and real mathematical logic. The navigation bar is hidden, and the layout remains strictly Left-to-Right (LTR) across all languages to preserve the disguise.
-* **Hidden Registration & PIN Auth:** First-time users trigger the sign-up flow by entering `1234=`. Registered users enter their custom 4-digit PIN followed by `=` to unlock the dashboard.
+* **Hidden Registration & PIN Auth:** First-time users trigger the sign-up flow with a long-press (~1.2s) on the display — not a typeable digit sequence, since something like `1234=` is the first thing anyone probing a calculator would try. Registered users enter their custom 4-digit PIN followed by `=` to unlock the dashboard.
 * **Silent Failure on Wrong PIN:** Entering an incorrect PIN simply resets the calculator display to `0` without showing error messages, protecting users under surveillance.
 * **Session Locking:** Returning to the calculator (via the quick exit button `✕` or physical shake) calls `lockSecureSession()`, rendering sensitive data inaccessible until re-authenticated.
 * **Shake-to-Reset (Native):** Utilizing device accelerometer sensors (`expo-sensors`), a quick physical shake immediately resets the UI back to the calculator mask.
