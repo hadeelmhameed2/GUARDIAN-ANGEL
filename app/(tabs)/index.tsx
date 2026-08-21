@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -31,6 +31,13 @@ import {
 const BYPASS_SERVER_AUTH = false;
 
 const FOUR_DIGIT_PIN = /^\d{4}$/;
+
+// Hidden setup/login trigger: a rapid triple-tap on the display, rather than
+// a long-press. `onLongPress` is unreliable with mouse input on
+// react-native-web; a plain `onPress` tap counter fires identically on
+// touch, mouse click, and Android/iOS taps.
+const HIDDEN_TRIGGER_TAP_COUNT = 3;
+const HIDDEN_TRIGGER_WINDOW_MS = 600;
 
 function isFourDigitPin(value: string): boolean {
   return FOUR_DIGIT_PIN.test(value);
@@ -200,6 +207,8 @@ export default function CalculatorMaskScreen() {
         if (unlocked) {
           setShowAuthPanel(false);
           router.replace('/home');
+        } else {
+          setErrorMessage('Something went wrong. Please try again.');
         }
         return;
       }
@@ -229,6 +238,8 @@ export default function CalculatorMaskScreen() {
       if (unlocked) {
         setShowAuthPanel(false);
         router.replace('/home');
+      } else {
+        setErrorMessage('Something went wrong. Please try again.');
       }
     } catch {
       setErrorMessage('Could not connect. Check your network and try again.');
@@ -244,16 +255,27 @@ export default function CalculatorMaskScreen() {
     const hasToken = hasAuthToken(token);
     const personalCode = calculatorCode;
 
+    if (!hasToken && currentExpression === '1234') {
+      setShowAuthPanel(true);
+      setExpression('');
+      setDisplay('0');
+      return;
+    }
+
     if (hasToken && personalCode && isFourDigitPin(currentExpression)) {
       if (currentExpression === personalCode) {
-        if (isApiConfigured() && !BYPASS_SERVER_AUTH) {
-          await refreshAuthSession();
-        }
+        // Unlock and navigate on the local PIN match first — this must never
+        // be blocked (or undone) by the network. The server token refresh
+        // runs afterward, in the background, purely to keep API calls
+        // authenticated; its failure must not affect local access.
         const unlocked = await unlockSecureDataWithPin(currentExpression);
         if (unlocked) {
           setExpression('');
           setDisplay('0');
           router.replace('/home');
+          if (isApiConfigured() && !BYPASS_SERVER_AUTH) {
+            void refreshAuthSession();
+          }
         }
         return;
       }
@@ -274,17 +296,44 @@ export default function CalculatorMaskScreen() {
   };
 
   /**
-   * Setup/login is reached by a deliberate long-press on the display, not a
-   * typeable digit sequence — "1234=" is the single most likely thing
+   * Setup/login is reached by a deliberate rapid triple-tap on the display,
+   * not a typeable digit sequence — "1234=" is the single most likely thing
    * anyone would try on a calculator, so it must behave like plain math
    * (see handleEqualsPress) instead of revealing the app.
    */
-  const handleDisplayLongPress = async () => {
+  const openSetupPanelIfNoAccount = async () => {
     const { token } = await refreshAuthFromStorage();
     if (hasAuthToken(token)) return;
     setShowAuthPanel(true);
     setExpression('');
     setDisplay('0');
+  };
+
+  const tapCountRef = useRef(0);
+  const tapResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetDisplayTapTracking = useCallback(() => {
+    tapCountRef.current = 0;
+    if (tapResetTimerRef.current) {
+      clearTimeout(tapResetTimerRef.current);
+      tapResetTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => resetDisplayTapTracking, [resetDisplayTapTracking]);
+
+  const handleDisplayPress = () => {
+    tapCountRef.current += 1;
+    if (tapResetTimerRef.current) {
+      clearTimeout(tapResetTimerRef.current);
+      tapResetTimerRef.current = null;
+    }
+    if (tapCountRef.current >= HIDDEN_TRIGGER_TAP_COUNT) {
+      resetDisplayTapTracking();
+      void openSetupPanelIfNoAccount();
+      return;
+    }
+    tapResetTimerRef.current = setTimeout(resetDisplayTapTracking, HIDDEN_TRIGGER_WINDOW_MS);
   };
 
   const onPressKey = (key: string) => {
@@ -466,8 +515,7 @@ export default function CalculatorMaskScreen() {
 
       <Pressable
         style={[styles.displayWrap, { direction: 'ltr' }]}
-        onLongPress={() => void handleDisplayLongPress()}
-        delayLongPress={1200}>
+        onPress={handleDisplayPress}>
         <Text style={styles.display}>{display}</Text>
       </Pressable>
       <View style={[styles.keypad, { direction: 'ltr' }]}>

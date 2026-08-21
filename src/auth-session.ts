@@ -59,7 +59,12 @@ export async function refreshAuthSession(): Promise<string | null> {
     if (!response.ok) {
       console.warn(LOG_PREFIX, 'Refresh failed', { status: response.status, error: payload.error });
       if (response.status === 401) {
-        await clearAuthSession();
+        // The server session is stale (e.g. a rotated signing secret, a
+        // temporary account lock) — drop only the now-invalid token. The
+        // calculator PIN is the local unlock gate and must survive this;
+        // wiping it here would silently lock the user out of the app even
+        // though they typed their correct PIN (see handleEqualsPress).
+        await deleteSecureItem(AUTH_TOKEN_KEY);
       }
       return null;
     }
