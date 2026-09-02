@@ -5,6 +5,10 @@ export type EvidenceJournalEntry = {
   imageBase64?: string;
   audioBase64?: string;
   audioDurationSec?: number;
+  /** Marks entries produced by a special flow (e.g. 'Voice Emergency' from the
+   *  voice trigger) so the journal feed can render them differently. Absent
+   *  for ordinary manually-created entries. */
+  entryType?: string;
   entryHash?: string;
   previousEntryHash?: string;
 };

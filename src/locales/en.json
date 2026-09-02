@@ -115,7 +115,8 @@
       "captionErrorNetwork": "Could not reach the caption service. Check your connection.",
       "captionErrorEmpty": "AI returned no description. You can type one manually.",
       "captionErrorServer": "AI captioning failed. You can still describe the image manually.",
-      "audioAttached": "🎤 Audio recording attached ({{seconds}}s)"
+      "audioAttached": "🎤 Audio recording attached ({{seconds}}s)",
+      "drafts": "Drafts"
     },
     "emergency": {
       "title": "EMERGENCY PROTOCOL ACTIVATED",

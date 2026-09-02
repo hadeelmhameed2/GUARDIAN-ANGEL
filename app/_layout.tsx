@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import i18n from '@/src/i18n';
 import { configureNotificationHandler } from '@/src/mood-checkin/notifications';
+import { VoiceDraftProvider } from '@/src/voice-draft-context';
 
 configureNotificationHandler();
 
@@ -40,7 +41,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <I18nextProvider i18n={i18n}>
-      <RootLayoutNav />
+      <VoiceDraftProvider>
+        <RootLayoutNav />
+      </VoiceDraftProvider>
     </I18nextProvider>
   );
 }

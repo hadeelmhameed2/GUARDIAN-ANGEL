@@ -1,8 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { chainHashes, type EvidenceJournalEntry } from './evidence';
 import { readSecureItem, writeSecureItem } from './secure-storage';
 
 export type WriteResult = { ok: boolean; quota?: boolean };
+
+/** Storage key for the hash-chained evidence journal rendered on the main Journal screen (app/home.tsx). */
+export const EVIDENCE_JOURNAL_STORAGE_KEY = 'guardian_angel_evidence_journal_v1';
 
 export async function readJournalRaw(key: string): Promise<string | null> {
   if (Platform.OS === 'web') {
@@ -177,4 +181,28 @@ export async function readDecryptedJournal(key: string): Promise<string | null> 
 export async function writeEncryptedJournal(key: string, plaintext: string): Promise<WriteResult> {
   const envelope = await encryptJournalPayload(plaintext);
   return writeJournalRaw(key, envelope ?? plaintext);
+}
+
+/**
+ * Inserts (or, on retry, replaces) a single entry in the hash-chained
+ * evidence journal and re-persists it. Lets flows outside app/home.tsx's own
+ * React state — e.g. the Drafts screen — add an entry that the Journal feed
+ * will pick up next time it reads storage, without duplicating the
+ * read/parse/chain/write dance app/home.tsx already does for its own state.
+ */
+export async function upsertEvidenceEntry(entry: EvidenceJournalEntry): Promise<boolean> {
+  const raw = await readDecryptedJournal(EVIDENCE_JOURNAL_STORAGE_KEY);
+  let existing: EvidenceJournalEntry[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) existing = parsed;
+    } catch {
+      existing = [];
+    }
+  }
+  const withoutEntry = existing.filter((item) => item.id !== entry.id);
+  const chained = await chainHashes([entry, ...withoutEntry]);
+  const result = await writeEncryptedJournal(EVIDENCE_JOURNAL_STORAGE_KEY, JSON.stringify(chained));
+  return result.ok;
 }

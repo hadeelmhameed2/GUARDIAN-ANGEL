@@ -115,7 +115,8 @@
       "captionErrorNetwork": "לא ניתן להגיע לשירות התיאור. בדקי את החיבור.",
       "captionErrorEmpty": "AI לא החזיר תיאור. אפשר להקליד ידנית.",
       "captionErrorServer": "תיאור AI נכשל. אפשר עדיין לתאר את התמונה ידנית.",
-      "audioAttached": "🎤 מצורף קובץ אודיו ({{seconds}} שנ׳)"
+      "audioAttached": "🎤 מצורף קובץ אודיו ({{seconds}} שנ׳)",
+      "drafts": "טיוטות"
     },
     "emergency": {
       "title": "נוהל חירום הופעל",

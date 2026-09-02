@@ -69,7 +69,11 @@ import {
   chainHashes,
   type EvidenceJournalEntry,
 } from '@/src/evidence';
-import { readDecryptedJournal, writeEncryptedJournal } from '@/src/journal-storage';
+import {
+  EVIDENCE_JOURNAL_STORAGE_KEY,
+  readDecryptedJournal,
+  writeEncryptedJournal,
+} from '@/src/journal-storage';
 import { pickJournalImageNative } from '@/src/journal-image';
 import { appendJournalCaption, describeImageErrorMessage, describeJournalImage } from '@/src/journal-ai-caption';
 import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
@@ -155,8 +159,6 @@ const ACTION_GRID_BG: Record<RiskState, string> = {
   green: '#F0F4E8',
 };
 
-const EVIDENCE_JOURNAL_STORAGE_KEY = 'guardian_angel_evidence_journal_v1';
-
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -164,6 +166,20 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('FileReader failed'));
     reader.readAsDataURL(blob);
   });
+}
+
+/**
+ * Voice Emergency entries (from the calculator's voice trigger) don't carry
+ * their audio inline — `description` holds the localStorage key the Drafts
+ * screen wrote the Base64 clip under (see src/screens/DraftsScreen.tsx).
+ */
+function readVoiceRecordingBase64(storageKey: string): string | null {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
 }
 
 function formatRecordingDuration(seconds: number): string {
@@ -418,11 +434,19 @@ export default function HomeScreen() {
   };
 
   const deleteJournalEntry = async (id: string) => {
+    const target = journalEntries.find((entry) => entry.id === id);
     const filtered = journalEntries.filter((entry) => entry.id !== id);
     const rechained = await chainHashes(filtered);
     const persisted = await persistJournalEntries(rechained);
     if (!persisted) return;
     setJournalEntries(rechained);
+    if (target?.entryType === 'Voice Emergency' && Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(target.description);
+      } catch {
+        // Best-effort cleanup — a leftover localStorage entry is harmless.
+      }
+    }
   };
 
   const beginRecordingTimer = () => {
@@ -1119,26 +1143,49 @@ export default function HomeScreen() {
             <View style={styles.journalFeed}>
               {journalEntries.map((entry) => (
                 <View key={entry.id} style={styles.journalEntryCard}>
-                  <Text style={[styles.journalEntryTimestamp, rtlText]}>{entry.timestamp}</Text>
-                  {entry.description ? <Text style={[styles.journalEntryText, rtlText]}>{entry.description}</Text> : null}
+                  <Text style={[styles.journalEntryTimestamp, rtlText]}>
+                    {entry.entryType === 'Voice Emergency'
+                      ? formatTimestamp(new Date(entry.timestamp))
+                      : entry.timestamp}
+                  </Text>
+                  {entry.entryType === 'Voice Emergency' ? (
+                    <Text style={[styles.journalEntryText, rtlText]}>Voice Emergency Recording</Text>
+                  ) : entry.description ? (
+                    <Text style={[styles.journalEntryText, rtlText]}>{entry.description}</Text>
+                  ) : null}
                   {entry.imageBase64 ? (
                     <TouchableOpacity onPress={() => setJournalViewerImage(entry.imageBase64 ?? null)}>
                       <Image source={{ uri: entry.imageBase64 }} style={styles.journalThumb} />
                     </TouchableOpacity>
                   ) : null}
-                  {entry.audioBase64 && Platform.OS === 'web'
-                    ? React.createElement('audio', {
-                        controls: true,
-                        src: entry.audioBase64,
-                        style: { width: '100%', marginTop: 8 },
-                      })
-                    : entry.audioBase64
-                      ? (
-                        <Text style={[styles.journalEntryAudioFallback, rtlText]}>
-                          {t('homeScreen.journal.audioAttached', { seconds: entry.audioDurationSec ?? 0 })}
-                        </Text>
-                      )
-                      : null}
+                  {entry.entryType === 'Voice Emergency'
+                    ? (() => {
+                        const voiceRecordingBase64 = readVoiceRecordingBase64(entry.description);
+                        return voiceRecordingBase64 && Platform.OS === 'web'
+                          ? React.createElement('audio', {
+                              controls: true,
+                              src: voiceRecordingBase64,
+                              style: { width: '100%', marginTop: 8 },
+                            })
+                          : (
+                            <Text style={[styles.journalEntryAudioFallback, rtlText]}>
+                              {t('homeScreen.journal.audioAttached', { seconds: 0 })}
+                            </Text>
+                          );
+                      })()
+                    : entry.audioBase64 && Platform.OS === 'web'
+                      ? React.createElement('audio', {
+                          controls: true,
+                          src: entry.audioBase64,
+                          style: { width: '100%', marginTop: 8 },
+                        })
+                      : entry.audioBase64
+                        ? (
+                          <Text style={[styles.journalEntryAudioFallback, rtlText]}>
+                            {t('homeScreen.journal.audioAttached', { seconds: entry.audioDurationSec ?? 0 })}
+                          </Text>
+                        )
+                        : null}
                   {entry.entryHash ? (
                     <View style={styles.journalEntryHashRow}>
                       <Link2 size={12} color={Palette.inkFaint} strokeWidth={2} />
@@ -1153,6 +1200,11 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
+
+            <TouchableOpacity style={styles.journalDraftsButton} onPress={() => router.push('/drafts')}>
+              <Mic size={16} color="#FFFFFF" strokeWidth={2.25} />
+              <Text style={[styles.journalDraftsButtonText, rtlText]}>{t('homeScreen.journal.drafts')}</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -2325,6 +2377,24 @@ const styles = StyleSheet.create({
     color: Palette.primaryDeep,
     fontSize: 12,
     fontWeight: '700',
+  },
+  journalDraftsButton: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 999,
+    paddingVertical: 14,
+    backgroundColor: Palette.primaryDeep,
+    ...Shadow.soft,
+  },
+  journalDraftsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   journalSelectedImageBlock: {
     marginTop: 12,

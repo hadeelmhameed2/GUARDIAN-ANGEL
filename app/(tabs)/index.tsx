@@ -27,6 +27,8 @@ import {
   type AuthCredentials,
   writeSecureItem,
 } from '@/src/secure-storage';
+import { useVoiceDrafts } from '@/src/voice-draft-context';
+import { useVoiceEmergencyTrigger } from '@/src/voice-trigger';
 
 /** Production: real Cloudflare `/api/auth` login & registration. Set `true` only for offline dev. */
 const BYPASS_SERVER_AUTH = false;
@@ -124,6 +126,12 @@ export default function CalculatorMaskScreen() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Stealth voice trigger: silently arms in the background if the user
+  // enabled it from the Drafts screen. No UI here — anything visible would
+  // blow the calculator disguise. See src/voice-trigger.ts.
+  const { addDraft } = useVoiceDrafts();
+  useVoiceEmergencyTrigger(addDraft);
 
   const authHeaderTitle = authMode === 'register' ? 'Welcome to Guardian Angel' : 'Welcome Back';
   const authHeaderSubtitle =
