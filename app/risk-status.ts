@@ -1,5 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
-import { AUTH_CALCULATOR_CODE_KEY, readSecureItem } from '@/src/secure-storage';
+import { AUTH_CALCULATOR_CODE_KEY, readSecureItem, writeSecureItem } from '@/src/secure-storage';
 export type RiskState = 'green' | 'yellow' | 'red';
 
 export type ExitFundTransaction = {
@@ -66,10 +65,14 @@ function isValidStorageKey(key: string | null | undefined): key is string {
   return /^[A-Za-z0-9_]+$/.test(key);
 }
 
+// Routed through src/secure-storage.ts rather than calling expo-secure-store
+// directly: that module's web build is a stub, so a direct SecureStore call
+// throws on every read/write on web (this app's primary target platform).
+// readSecureItem/writeSecureItem already handle that split correctly.
 async function safeGetItem(key: string | null | undefined) {
   if (!isValidStorageKey(key)) return null;
   try {
-    return await SecureStore.getItemAsync(key);
+    return await readSecureItem(key);
   } catch {
     return null;
   }
@@ -78,7 +81,7 @@ async function safeGetItem(key: string | null | undefined) {
 async function safeSetItem(key: string | null | undefined, value: string) {
   if (!isValidStorageKey(key)) return;
   try {
-    await SecureStore.setItemAsync(key, value);
+    await writeSecureItem(key, value);
   } catch {
     // Storage failures should never crash the app.
   }

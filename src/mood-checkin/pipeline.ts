@@ -1,9 +1,9 @@
 import type { TFunction } from 'i18next';
 import * as Location from 'expo-location';
-import * as SMS from 'expo-sms';
-import { Linking, Platform } from 'react-native';
+import { Alert } from 'react-native';
 
 import { getTrustedContacts } from '@/app/risk-status';
+import { authFetch } from '@/src/auth-session';
 
 import { cancelStoredSchedules, scheduleQuietCheckInReminder } from './notifications';
 import {
@@ -51,7 +51,9 @@ export async function runSafetyCheckinPipeline(t: TFunction): Promise<void> {
   const latestSettings = await getSafetySettings();
   if (!latestSettings.safetyCheckinEnabled) return;
 
-  await escalateSafetyCheckin(t, latestSettings.presetSosMessage);
+  const escalated = await escalateSafetyCheckin(t, latestSettings.presetSosMessage);
+  if (!escalated) return; // leave escalationIssuedAt unset so this retries next time the app opens
+
   await cancelStoredSchedules(state.scheduledIds);
   await saveSafetyState({
     ...state,
@@ -60,10 +62,18 @@ export async function runSafetyCheckinPipeline(t: TFunction): Promise<void> {
   });
 }
 
-async function escalateSafetyCheckin(t: TFunction, presetSosMessage: string): Promise<void> {
+/**
+ * Dispatches the SOS via the server (functions/api/sos/send.ts) rather than
+ * the device's SMS composer — that composer requires a human to press Send,
+ * which defeats the point of an *automated* alert for a user who's assumed
+ * unable to act. Returns whether the dispatch actually succeeded, and shows
+ * a confirmation/failure Alert either way. Exported so the Core Settings
+ * "Demo: Trigger SOS Now" button can fire this exact path on demand.
+ */
+export async function escalateSafetyCheckin(t: TFunction, presetSosMessage: string): Promise<boolean> {
   const contacts = getTrustedContacts();
   const raw = contacts[0]?.phone?.replace(/\s+/g, '');
-  if (!raw) return;
+  if (!raw) return false;
 
   let body = presetSosMessage.trim() || t('moodCheckin.escalationSmsBody');
   try {
@@ -77,13 +87,21 @@ async function escalateSafetyCheckin(t: TFunction, presetSosMessage: string): Pr
     // location unavailable
   }
 
-  if (Platform.OS !== 'web' && (await SMS.isAvailableAsync())) {
-    await SMS.sendSMSAsync([raw], body);
-    return;
+  try {
+    const response = await authFetch('/api/sos/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ phone: raw, message: body }),
+    });
+    if (!response.ok) {
+      throw new Error(`SOS dispatch failed with status ${response.status}`);
+    }
+    Alert.alert(t('moodCheckin.sosDispatchedTitle'), t('moodCheckin.sosDispatchedBody'));
+    return true;
+  } catch {
+    Alert.alert(t('moodCheckin.sosDispatchFailedTitle'), t('moodCheckin.sosDispatchFailedBody'));
+    return false;
   }
-
-  const qs = encodeURIComponent(body);
-  await Linking.openURL(`sms:${raw}?body=${qs}`);
 }
 
 export async function disableSafetyCheckinSchedules(): Promise<void> {

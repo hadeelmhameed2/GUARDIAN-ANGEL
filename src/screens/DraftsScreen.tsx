@@ -119,17 +119,26 @@ export default function DraftsScreen() {
         throw new Error('Failed to write local journal entry');
       }
 
-      const response = await apiFetch('/api/journal', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          entry_type: 'Voice Emergency',
-          description: storageKey,
-          timestamp: timestampIso,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(`Journal save failed with status ${response.status}`);
+      // Best-effort mirror to the server audit trail — must not block or
+      // fail the save itself. The local write above is the source of truth
+      // and is already what makes the recording visible/playable in the
+      // Journal, so a network hiccup (or this route not existing yet) here
+      // should never make "Save" report failure or leave the draft stuck.
+      try {
+        const response = await apiFetch('/api/journal', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            entry_type: 'Voice Emergency',
+            description: storageKey,
+            timestamp: timestampIso,
+          }),
+        });
+        if (!response.ok) {
+          console.warn('[DraftsScreen] /api/journal mirror failed', response.status);
+        }
+      } catch (err) {
+        console.warn('[DraftsScreen] /api/journal mirror failed', err);
       }
 
       removeDraft(id);

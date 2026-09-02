@@ -43,7 +43,11 @@ export async function scheduleQuietCheckInReminder(title: string, body: string):
     content: {
       title,
       body,
-      sound: undefined,
+      // Omit `sound` entirely — passing `undefined` here serializes to a
+      // literal `null` across the native bridge, and the native module
+      // crashes trying to cast null into its Optional<Either<Bool,String>>
+      // sound field. Omitting the key (rather than `sound: true`) keeps
+      // this reminder quiet, matching the function's intent.
       priority: Notifications.AndroidNotificationPriority.LOW,
     },
     trigger: {
@@ -57,7 +61,6 @@ export async function scheduleQuietCheckInReminder(title: string, body: string):
     content: {
       title,
       body,
-      sound: undefined,
       priority: Notifications.AndroidNotificationPriority.LOW,
     },
     trigger: {

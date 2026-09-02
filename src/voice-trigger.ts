@@ -120,6 +120,12 @@ export function useVoiceEmergencyTrigger(onDraftRecorded: (draft: VoiceDraft) =>
   const chunksRef = useRef<Blob[]>([]);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Guards against a second trigger-word match starting a second, concurrent
+  // recording — `recognition.stop()` doesn't silence the recognizer
+  // synchronously, so one more buffered `result` event (potentially another
+  // match) can still arrive after it's called. Two concurrent MediaRecorders
+  // would both write into the same chunksRef/streamRef and corrupt the clip.
+  const isTriggeredRef = useRef(false);
   const onDraftRecordedRef = useRef(onDraftRecorded);
   onDraftRecordedRef.current = onDraftRecorded;
 
@@ -166,9 +172,11 @@ export function useVoiceEmergencyTrigger(onDraftRecorded: (draft: VoiceDraft) =>
     recognition.interimResults = false;
 
     recognition.onresult = (event) => {
+      if (isTriggeredRef.current) return;
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const transcript = event.results[i]?.[0]?.transcript ?? '';
         if (TRIGGER_WORDS.some((word) => transcript.includes(word))) {
+          isTriggeredRef.current = true;
           const active = recognitionRef.current;
           recognitionRef.current = null;
           active?.stop();
@@ -203,6 +211,7 @@ export function useVoiceEmergencyTrigger(onDraftRecorded: (draft: VoiceDraft) =>
       recognition?.stop();
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       cleanupStream();
+      isTriggeredRef.current = false;
     };
     // Intentionally mount-only: the Calculator screen checks the flag once
     // when it mounts, per the stealth-mode design.

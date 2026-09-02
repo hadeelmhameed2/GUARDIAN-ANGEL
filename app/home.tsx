@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -231,6 +231,29 @@ export default function HomeScreen() {
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const captionRequestRef = useRef(0);
   const isUnlocked = hasSecureSessionAccess();
+
+  // Releases the mic stream/timer if the user navigates away mid-recording
+  // (e.g. shake-to-hide) instead of pressing stop — otherwise the browser
+  // keeps the mic live indefinitely, which both drains battery and leaves a
+  // visible "recording" indicator that could out the calculator disguise.
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      if (mediaRecorderRef.current?.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current?.stop();
+        } catch {
+          // already stopped
+        }
+      }
+      audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+      audioStreamRef.current = null;
+    };
+  }, []);
+
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();

@@ -18,8 +18,9 @@ import {
 
 import { Fonts, Palette, Radii, Shadow } from '@/constants/theme';
 import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
+import { getTrustedContacts } from '@/app/risk-status';
 import { getEmergencyContact, saveEmergencyContact } from '@/src/emergency-contact';
-import { disableSafetyCheckinSchedules } from '@/src/mood-checkin/pipeline';
+import { disableSafetyCheckinSchedules, escalateSafetyCheckin } from '@/src/mood-checkin/pipeline';
 import { getSafetySettings, saveSafetySettings } from '@/src/mood-checkin/storage';
 
 export default function CoreSettingsScreen() {
@@ -35,6 +36,7 @@ export default function CoreSettingsScreen() {
   const [safetyCheckinEnabled, setSafetyCheckinEnabled] = useState(false);
   const [presetSosMessage, setPresetSosMessage] = useState('');
   const [isSavingSafety, setIsSavingSafety] = useState(false);
+  const [isTriggeringDemoSos, setIsTriggeringDemoSos] = useState(false);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -80,6 +82,24 @@ export default function CoreSettingsScreen() {
       Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
     } finally {
       setIsSavingSafety(false);
+    }
+  };
+
+  const onDemoTriggerSos = async () => {
+    if (isTriggeringDemoSos) return;
+    // escalateSafetyCheckin reads its recipient from the Home screen's
+    // "Support" trusted contacts (app/risk-status.ts) — a separate store
+    // from the emergency-contact form above — so check it directly rather
+    // than let the call fail with a generic dispatch-failed message.
+    if (getTrustedContacts().length === 0) {
+      Alert.alert(t('panic.settings.errorTitle'), t('moodCheckin.demoTriggerSosNoContact'));
+      return;
+    }
+    setIsTriggeringDemoSos(true);
+    try {
+      await escalateSafetyCheckin(t, presetSosMessage);
+    } finally {
+      setIsTriggeringDemoSos(false);
     }
   };
 
@@ -189,6 +209,16 @@ export default function CoreSettingsScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={styles.demoSosButton}
+            onPress={() => void onDemoTriggerSos()}
+            disabled={isTriggeringDemoSos}
+            accessibilityRole="button">
+            <Text style={styles.demoSosButtonText}>
+              {isTriggeringDemoSos ? t('panic.settings.savingLabel') : t('moodCheckin.demoTriggerSosButton')}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -312,5 +342,17 @@ const styles = StyleSheet.create({
   safetyMessageInput: {
     minHeight: 100,
     marginBottom: 8,
+  },
+  demoSosButton: {
+    marginTop: 4,
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  demoSosButtonText: {
+    color: Palette.inkFaint,
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { chainHashes, type EvidenceJournalEntry } from './evidence';
-import { readSecureItem, writeSecureItem } from './secure-storage';
+import { deleteSecureItem, readSecureItem, writeSecureItem } from './secure-storage';
+import { getStoredCryptoKey, putStoredCryptoKey } from './web-crypto-key-store';
 
 export type WriteResult = { ok: boolean; quota?: boolean };
 
@@ -101,8 +102,65 @@ function getWebCrypto(): Crypto | null {
   return cryptoObj;
 }
 
+// Web: the AES key lives as a non-extractable CryptoKey object in IndexedDB
+// (src/web-crypto-key-store.ts) instead of raw bytes in localStorage — see
+// that file's header comment for why. `keyPromise` memoizes the in-flight
+// lookup/generation so two concurrent encrypt/decrypt calls (e.g. saving two
+// journal entries back to back) can't race into generating two different
+// keys, which would silently make earlier-encrypted entries undecryptable.
+const WEB_JOURNAL_KEY_RECORD = 'journal-aes-key';
+let webKeyPromise: Promise<CryptoKey | null> | null = null;
+
+async function migrateOrCreateWebJournalKey(cryptoObj: Crypto): Promise<CryptoKey | null> {
+  const existing = await getStoredCryptoKey(WEB_JOURNAL_KEY_RECORD);
+  if (existing) return existing;
+
+  // One-time migration: earlier builds stored the raw AES key bytes in
+  // localStorage under JOURNAL_ENC_KEY_STORAGE_KEY, trivially readable by
+  // anything that can read localStorage (devtools, an XSS payload, a
+  // forensic dump of the browser profile) — sitting right next to the
+  // ciphertext it was meant to protect. If that legacy key is present,
+  // import its bytes as a non-extractable CryptoKey (so existing journal
+  // entries keep decrypting), persist *that* into IndexedDB, then scrub the
+  // plaintext copy. Otherwise, generate a fresh key that never exists as
+  // exportable bytes at all.
+  const legacyRawKeyB64 = await readSecureItem(JOURNAL_ENC_KEY_STORAGE_KEY);
+  const key = legacyRawKeyB64
+    ? await cryptoObj.subtle.importKey(
+        'raw',
+        base64ToBytes(legacyRawKeyB64) as BufferSource,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt', 'decrypt'],
+      )
+    : await cryptoObj.subtle.generateKey({ name: 'AES-GCM', length: AES_KEY_BYTES * 8 }, false, [
+        'encrypt',
+        'decrypt',
+      ]);
+
+  const stored = await putStoredCryptoKey(WEB_JOURNAL_KEY_RECORD, key);
+  if (stored && legacyRawKeyB64) {
+    await deleteSecureItem(JOURNAL_ENC_KEY_STORAGE_KEY);
+  }
+  return key;
+}
+
 async function getOrCreateJournalKey(cryptoObj: Crypto): Promise<CryptoKey | null> {
   try {
+    if (Platform.OS === 'web') {
+      if (!webKeyPromise) {
+        webKeyPromise = migrateOrCreateWebJournalKey(cryptoObj).catch((error) => {
+          webKeyPromise = null; // let a later call retry instead of caching a failure
+          throw error;
+        });
+      }
+      return await webKeyPromise;
+    }
+
+    // Native: SecureStore is already backed by the OS keychain/keystore, and
+    // React Native's JS engine has no IndexedDB — there's no equivalent
+    // "raw bytes sitting in plaintext app storage" exposure here, so the
+    // existing raw-bytes-via-SecureStore approach is left as-is.
     let rawKeyB64 = await readSecureItem(JOURNAL_ENC_KEY_STORAGE_KEY);
     if (!rawKeyB64) {
       const keyBytes = cryptoObj.getRandomValues(new Uint8Array(AES_KEY_BYTES));
