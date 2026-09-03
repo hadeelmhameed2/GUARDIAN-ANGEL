@@ -199,7 +199,7 @@
   },
   "panic": {
     "triggerTitle": "כפתור חירום",
-    "triggerDescription": "לחצי כדי להכין טיוטות SMS ואימייל עם המיקום החי שלך.",
+    "triggerDescription": "לחצי כדי להכין הודעת חירום לאנשי הקשר שלך.",
     "triggering": "מכין התערבות חירום...",
     "settingsButton": "הגדרות איש קשר לחירום",
     "setup": {

@@ -199,7 +199,7 @@
   },
   "panic": {
     "triggerTitle": "زر الطوارئ",
-    "triggerDescription": "اضغطي لإعداد مسودات SMS والبريد مع موقعك المباشر.",
+    "triggerDescription": "اضغطي لإعداد رسالة طوارئ لجهات الاتصال الموثوقة.",
     "triggering": "جارٍ تجهيز تدخل الطوارئ...",
     "settingsButton": "إعدادات جهة اتصال الطوارئ",
     "setup": {
