@@ -9,7 +9,6 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,26 +16,17 @@ import {
 } from 'react-native';
 
 import { Fonts, Palette, Radii, Shadow } from '@/constants/theme';
-import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
-import { getTrustedContacts } from '@/app/risk-status';
 import { getEmergencyContact, saveEmergencyContact } from '@/src/emergency-contact';
-import { disableSafetyCheckinSchedules, escalateSafetyCheckin } from '@/src/mood-checkin/pipeline';
-import { getSafetySettings, saveSafetySettings } from '@/src/mood-checkin/storage';
 
 export default function CoreSettingsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
-  const { rtlText } = useRtlTextStyle();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [safetyCheckinEnabled, setSafetyCheckinEnabled] = useState(false);
-  const [presetSosMessage, setPresetSosMessage] = useState('');
-  const [isSavingSafety, setIsSavingSafety] = useState(false);
-  const [isTriggeringDemoSos, setIsTriggeringDemoSos] = useState(false);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -53,55 +43,9 @@ export default function CoreSettingsScreen() {
         setName(data.name);
         setPhone(data.phone);
         setEmail(data.email);
-        const safety = await getSafetySettings();
-        setSafetyCheckinEnabled(safety.safetyCheckinEnabled);
-        setPresetSosMessage(safety.presetSosMessage);
       })();
     }, []),
   );
-
-  const onToggleAutomatedSos = async (value: boolean) => {
-    setSafetyCheckinEnabled(value);
-    try {
-      await saveSafetySettings({ safetyCheckinEnabled: value, presetSosMessage });
-      if (!value) {
-        await disableSafetyCheckinSchedules();
-      }
-    } catch {
-      setSafetyCheckinEnabled(!value);
-      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
-    }
-  };
-
-  const onSaveSafetyMessage = async () => {
-    setIsSavingSafety(true);
-    try {
-      await saveSafetySettings({ safetyCheckinEnabled, presetSosMessage });
-      Alert.alert(t('panic.settings.successTitle'), t('panic.settings.successMessage'));
-    } catch {
-      Alert.alert(t('panic.settings.errorTitle'), t('panic.settings.saveErrorMessage'));
-    } finally {
-      setIsSavingSafety(false);
-    }
-  };
-
-  const onDemoTriggerSos = async () => {
-    if (isTriggeringDemoSos) return;
-    // escalateSafetyCheckin reads its recipient from the Home screen's
-    // "Support" trusted contacts (app/risk-status.ts) — a separate store
-    // from the emergency-contact form above — so check it directly rather
-    // than let the call fail with a generic dispatch-failed message.
-    if (getTrustedContacts().length === 0) {
-      Alert.alert(t('panic.settings.errorTitle'), t('moodCheckin.demoTriggerSosNoContact'));
-      return;
-    }
-    setIsTriggeringDemoSos(true);
-    try {
-      await escalateSafetyCheckin(t, presetSosMessage);
-    } finally {
-      setIsTriggeringDemoSos(false);
-    }
-  };
 
   const onSave = async () => {
     const nextName = name.trim();
@@ -175,50 +119,6 @@ export default function CoreSettingsScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-
-          <View style={styles.card}>
-            <Text style={styles.safetySectionTitle}>{t('moodCheckin.settingsSectionTitle')}</Text>
-            <View style={styles.switchRow}>
-              <Text style={[styles.switchLabel, rtlText]}>{t('moodCheckin.settingsConsentLabel')}</Text>
-              <Switch
-                value={safetyCheckinEnabled}
-                onValueChange={(v) => void onToggleAutomatedSos(v)}
-                trackColor={{ false: Palette.border, true: Palette.sageSoft }}
-                thumbColor={safetyCheckinEnabled ? Palette.sage : Palette.surface}
-                accessibilityLabel={t('moodCheckin.settingsConsentLabel')}
-              />
-            </View>
-            <Text style={[styles.safetyExplainer, rtlText]}>{t('moodCheckin.settingsConsentExplainer')}</Text>
-            <Text style={styles.label}>{t('moodCheckin.presetSosMessageLabel')}</Text>
-            <TextInput
-              value={presetSosMessage}
-              onChangeText={setPresetSosMessage}
-              placeholder={t('moodCheckin.presetSosMessagePlaceholder')}
-              placeholderTextColor={Palette.inkFaint}
-              style={[styles.input, styles.safetyMessageInput, rtlText]}
-              multiline
-              textAlignVertical="top"
-            />
-            <TouchableOpacity
-              style={[styles.saveButton, isSavingSafety ? styles.saveButtonDisabled : null]}
-              onPress={() => void onSaveSafetyMessage()}
-              disabled={isSavingSafety}
-              accessibilityRole="button">
-              <Text style={styles.saveButtonText}>
-                {isSavingSafety ? t('panic.settings.savingLabel') : t('common.save')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.demoSosButton}
-            onPress={() => void onDemoTriggerSos()}
-            disabled={isTriggeringDemoSos}
-            accessibilityRole="button">
-            <Text style={styles.demoSosButtonText}>
-              {isTriggeringDemoSos ? t('panic.settings.savingLabel') : t('moodCheckin.demoTriggerSosButton')}
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -311,48 +211,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     letterSpacing: 0.3,
-  },
-  safetySectionTitle: {
-    color: Palette.ink,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 12,
-  },
-  switchLabel: {
-    flex: 1,
-    flexShrink: 1,
-    color: Palette.inkSoft,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 19,
-  },
-  safetyExplainer: {
-    color: Palette.inkMuted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  safetyMessageInput: {
-    minHeight: 100,
-    marginBottom: 8,
-  },
-  demoSosButton: {
-    marginTop: 4,
-    alignSelf: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  demoSosButtonText: {
-    color: Palette.inkFaint,
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });

@@ -11,8 +11,6 @@
     "build:web": "expo export --platform web",
     "lint": "expo lint",
     "cf:hash-password": "node scripts/hash-password.mjs",
-    "docs:erd-png": "npx --yes @mermaid-js/mermaid-cli@11.4.0 -i docs/diagrams/erd-d1.mmd -o docs/diagrams/erd-d1.png -b transparent && npx --yes @mermaid-js/mermaid-cli@11.4.0 -i docs/diagrams/erd-r2.mmd -o docs/diagrams/erd-r2.png -b transparent && npx --yes @mermaid-js/mermaid-cli@11.4.0 -i docs/diagrams/erd-on-device.mmd -o docs/diagrams/erd-on-device.png -b transparent -w 2400 && npx --yes @mermaid-js/mermaid-cli@11.4.0 -i docs/diagrams/erd-e2e.mmd -o docs/diagrams/erd-e2e.png -b transparent",
-    "docs:workshop-png": "node scripts/render-workshop-diagrams.mjs",
     "cf:deploy": "npm run build && npx wrangler pages deploy dist --project-name guardianangelapp --branch main --commit-dirty=true"
   },
   "dependencies": {

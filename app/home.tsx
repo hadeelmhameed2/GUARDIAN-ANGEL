@@ -78,7 +78,6 @@ import { pickJournalImageNative } from '@/src/journal-image';
 import { appendJournalCaption, describeImageErrorMessage, describeJournalImage } from '@/src/journal-ai-caption';
 import { startNativeRecording, stopNativeRecording } from '@/src/journal-audio';
 import { MOOD_PALETTE } from '@/src/mood-checkin/constants';
-import { runSafetyCheckinPipeline } from '@/src/mood-checkin/pipeline';
 import { appendTodayMood, getMoodEntries, localDateString } from '@/src/mood-checkin/storage';
 import type { MoodEntry, MoodId } from '@/src/mood-checkin/types';
 
@@ -305,7 +304,6 @@ export default function HomeScreen() {
       void (async () => {
         const list = await getMoodEntries();
         setMoodEntries(list);
-        await runSafetyCheckinPipeline(t);
       })();
     }, [t]),
   );
@@ -767,7 +765,6 @@ export default function HomeScreen() {
   const onPickMood = async (id: MoodId) => {
     const next = await appendTodayMood(id);
     setMoodEntries(next);
-    await runSafetyCheckinPipeline(t);
     setShowMoodPickerModal(false);
   };
 
@@ -1334,12 +1331,6 @@ export default function HomeScreen() {
                       );
                     })}
                   </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push('/core-settings')}
-                  accessibilityRole="button"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.moodBentoSettingsLink, rtlText]}>{t('moodCheckin.settingsLink')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -2623,13 +2614,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Palette.inkFaint,
     textAlign: 'center',
-  },
-  moodBentoSettingsLink: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: '700',
-    color: Palette.primaryDeep,
-    textDecorationLine: 'underline',
   },
   moodPickerHint: {
     marginBottom: 10,
