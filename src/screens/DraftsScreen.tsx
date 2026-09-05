@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import { Fonts, Palette, Radii, Shadow, Spacing } from '@/constants/theme';
+import { NativeAudioPlayer } from '@/components/native-audio-player';
 import { apiFetch, isApiConfigured } from '@/src/api';
 import { upsertEvidenceEntry } from '@/src/journal-storage';
 import { useVoiceDrafts } from '@/src/voice-draft-context';
@@ -97,13 +98,25 @@ export default function DraftsScreen() {
 
     setSavingIds((prev) => new Set(prev).add(id));
     try {
-      // Blob URLs don't survive an app reload, so the draft is converted to
-      // a Base64 string and written to localStorage — that's what makes it
-      // durably playable from the Journal screen. The audio itself is still
-      // never sent anywhere; only a metadata pointer (the storage key) is.
-      const base64 = await blobToDataUrl(draft.blob);
-      const storageKey = `voice_record_${draft.id}`;
-      window.localStorage.setItem(storageKey, base64);
+      // Web: blob URLs don't survive an app reload, so the draft is
+      // converted to a Base64 string and written to localStorage — that's
+      // what makes it durably playable from the Journal screen.
+      // Native: the trigger already persisted the audio to a file in the
+      // app cache; the Journal reads it back from that file URI directly.
+      let storageKey: string;
+      if (Platform.OS === 'web') {
+        if (!draft.blob) {
+          throw new Error('Draft missing blob on web');
+        }
+        const base64 = await blobToDataUrl(draft.blob);
+        storageKey = `voice_record_${draft.id}`;
+        window.localStorage.setItem(storageKey, base64);
+      } else {
+        storageKey = draft.nativeUri ?? draft.nativeBase64 ?? '';
+        if (!storageKey) {
+          throw new Error('Draft missing native audio reference');
+        }
+      }
 
       const timestampIso = new Date(draft.timestamp).toISOString();
 
@@ -169,15 +182,16 @@ export default function DraftsScreen() {
         {!isSupported ? (
           <View style={[styles.card, styles.unsupportedCard]}>
             <Text style={styles.unsupportedText}>
-              Voice trigger recording needs a browser with Speech Recognition and microphone support.
+              Voice trigger recording needs microphone support on this device.
             </Text>
           </View>
         ) : (
           <View style={styles.card}>
             <Text style={styles.title}>Voice Emergency Trigger</Text>
             <Text style={styles.subtitle}>
-              When armed, the Calculator screen silently listens for “הצילו” or “עזרה” in the background — no
-              listening indicator is ever shown there, so the disguise stays intact.
+              {Platform.OS === 'web'
+                ? 'When armed, the Calculator screen silently listens for “הצילו” or “עזרה” in the background — no listening indicator is ever shown there, so the disguise stays intact.'
+                : 'When armed, the Calculator screen silently listens for a sustained loud sound (a scream or shout for help). No listening indicator is shown, so the disguise stays intact.'}
             </Text>
 
             <View style={styles.switchRow}>
@@ -215,8 +229,15 @@ export default function DraftsScreen() {
 
                   {/* Native <audio> element: Expo Web (react-native-web) renders raw
                       HTML tags straight through, so this only needs the web guard. */}
-                  {Platform.OS === 'web' ? (
+                  {Platform.OS === 'web' && draft.url ? (
                     <audio controls src={draft.url} style={{ width: '100%' }} />
+                  ) : draft.nativeUri || draft.nativeBase64 ? (
+                    <View style={{ marginTop: 4 }}>
+                      <NativeAudioPlayer
+                        uri={draft.nativeUri ?? draft.nativeBase64 ?? ''}
+                        durationSec={draft.durationSec}
+                      />
+                    </View>
                   ) : null}
 
                   <View style={styles.draftActions}>

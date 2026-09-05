@@ -1,4 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -419,7 +419,7 @@ export default function CalculatorMaskScreen() {
   const submitLabel = isSubmitting ? 'Please wait...' : authMode === 'login' ? 'Log in' : 'Sign up';
 
   return (
-    <SafeAreaView style={[styles.container, { direction: 'ltr' }]}>
+    <SafeAreaView style={styles.container}>
       <Modal
         visible={showAuthPanel}
         animationType="slide"
@@ -525,13 +525,13 @@ export default function CalculatorMaskScreen() {
       </Modal>
 
       <Pressable
-        style={[styles.displayWrap, { direction: 'ltr' }]}
+        style={styles.displayWrap}
         onPress={handleDisplayPress}>
         <Text style={styles.display}>{display}</Text>
       </Pressable>
-      <View style={[styles.keypad, { direction: 'ltr' }]}>
+      <View style={styles.keypad}>
         {BUTTONS.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={[styles.row, { direction: 'ltr' }]}>
+          <View key={`row-${rowIndex}`} style={styles.row}>
             {row.map((key) => {
               const isZero = key === '0' && row.length === 3;
               const isTop = ['AC', '+/-', '%'].includes(key);

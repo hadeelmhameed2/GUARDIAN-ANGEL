@@ -28,7 +28,13 @@ export function VoiceDraftProvider({ children }: { children: React.ReactNode }) 
   const removeDraft = useCallback((id: string) => {
     setDrafts((prev) => {
       const target = prev.find((draft) => draft.id === id);
-      if (target) URL.revokeObjectURL(target.url);
+      if (target?.url) {
+        try {
+          URL.revokeObjectURL(target.url);
+        } catch {
+          // ignore — the URL may already be revoked or unavailable on native
+        }
+      }
       return prev.filter((draft) => draft.id !== id);
     });
   }, []);

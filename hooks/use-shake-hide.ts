@@ -1,4 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router/react-navigation";
 import { Accelerometer } from 'expo-sensors';
 import { Platform } from 'react-native';
 import { useCallback, useRef } from 'react';

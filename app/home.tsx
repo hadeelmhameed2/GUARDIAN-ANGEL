@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router/react-navigation";
 import {
   ArrowLeft,
   BookOpen,
@@ -55,6 +55,7 @@ import {
 import { useShakeHide } from '../hooks/use-shake-hide';
 import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { NativeAudioPlayer } from '@/components/native-audio-player';
 import { getPanicSettings, savePanicSettings } from '@/src/panic-settings';
 import {
   BranchTint,
@@ -169,11 +170,19 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 /**
  * Voice Emergency entries (from the calculator's voice trigger) don't carry
- * their audio inline — `description` holds the localStorage key the Drafts
- * screen wrote the Base64 clip under (see src/screens/DraftsScreen.tsx).
+ * their audio inline — on web, `description` holds the localStorage key the
+ * Drafts screen wrote the Base64 clip under; on native, `description` is
+ * the file:// URI (or data URI) written by the trigger (see
+ * src/screens/DraftsScreen.tsx and src/voice-trigger.ts).
  */
 function readVoiceRecordingBase64(storageKey: string): string | null {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
+  if (Platform.OS !== 'web') {
+    if (storageKey.startsWith('file:') || storageKey.startsWith('data:')) {
+      return storageKey;
+    }
+    return null;
+  }
+  if (typeof window === 'undefined') return null;
   try {
     return window.localStorage.getItem(storageKey);
   } catch {
@@ -1146,9 +1155,10 @@ export default function HomeScreen() {
                         style: { width: '100%' },
                       })
                     : (
-                      <Text style={[styles.journalSelectedImageLabel, rtlText]}>
-                        {t('homeScreen.journal.recordingProgress', { time: formatRecordingDuration(selectedJournalAudioDuration) })}
-                      </Text>
+                      <NativeAudioPlayer
+                        uri={selectedJournalAudio}
+                        durationSec={selectedJournalAudioDuration}
+                      />
                     )}
                 </View>
                 <TouchableOpacity onPress={clearSelectedAudio}>
@@ -1181,16 +1191,23 @@ export default function HomeScreen() {
                   {entry.entryType === 'Voice Emergency'
                     ? (() => {
                         const voiceRecordingBase64 = readVoiceRecordingBase64(entry.description);
-                        return voiceRecordingBase64 && Platform.OS === 'web'
+                        if (!voiceRecordingBase64) {
+                          return (
+                            <Text style={[styles.journalEntryAudioFallback, rtlText]}>
+                              {t('homeScreen.journal.audioAttached', { seconds: 0 })}
+                            </Text>
+                          );
+                        }
+                        return Platform.OS === 'web'
                           ? React.createElement('audio', {
                               controls: true,
                               src: voiceRecordingBase64,
                               style: { width: '100%', marginTop: 8 },
                             })
                           : (
-                            <Text style={[styles.journalEntryAudioFallback, rtlText]}>
-                              {t('homeScreen.journal.audioAttached', { seconds: 0 })}
-                            </Text>
+                            <View style={{ marginTop: 8 }}>
+                              <NativeAudioPlayer uri={voiceRecordingBase64} />
+                            </View>
                           );
                       })()
                     : entry.audioBase64 && Platform.OS === 'web'
@@ -1201,9 +1218,12 @@ export default function HomeScreen() {
                         })
                       : entry.audioBase64
                         ? (
-                          <Text style={[styles.journalEntryAudioFallback, rtlText]}>
-                            {t('homeScreen.journal.audioAttached', { seconds: entry.audioDurationSec ?? 0 })}
-                          </Text>
+                          <View style={{ marginTop: 8 }}>
+                            <NativeAudioPlayer
+                              uri={entry.audioBase64}
+                              durationSec={entry.audioDurationSec}
+                            />
+                          </View>
                         )
                         : null}
                   {entry.entryHash ? (
@@ -1456,7 +1476,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   branchOverlayWrap: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 0,
   },
   branchOverlay: {
@@ -2590,7 +2614,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 4,
-    direction: 'ltr',
   },
   moodBentoWeekDay: {
     flex: 1,

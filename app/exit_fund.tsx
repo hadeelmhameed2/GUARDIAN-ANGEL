@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "expo-router/react-navigation";
 import React, { useCallback, useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HouseHeart, PiggyBank, Receipt, RefreshCw, ShieldAlert, Target, X } from 'lucide-react-native';
