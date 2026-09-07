@@ -2,7 +2,9 @@ import { useFocusEffect } from "expo-router/react-navigation";
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  I18nManager,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -34,6 +36,11 @@ import { useVoiceEmergencyTrigger } from '@/src/voice-trigger';
 const BYPASS_SERVER_AUTH = false;
 
 const FOUR_DIGIT_PIN = /^\d{4}$/;
+
+// I18nManager remaps `row` → `row-reverse` when the app is RTL. Write the
+// opposite so the keypad stays a standard LTR calculator on native.
+const LTR_ROW = I18nManager.isRTL ? 'row-reverse' : 'row';
+const webLtrDir = Platform.OS === 'web' ? ({ dir: 'ltr' } as const) : null;
 
 // Hidden setup/login trigger: a rapid triple-tap on the display, rather than
 // a long-press. `onLongPress` is unreliable with mouse input on
@@ -524,34 +531,36 @@ export default function CalculatorMaskScreen() {
         </LinearGradient>
       </Modal>
 
-      <Pressable
-        style={styles.displayWrap}
-        onPress={handleDisplayPress}>
-        <Text style={styles.display}>{display}</Text>
-      </Pressable>
-      <View style={styles.keypad}>
-        {BUTTONS.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={styles.row}>
-            {row.map((key) => {
-              const isZero = key === '0' && row.length === 3;
-              const isTop = ['AC', '+/-', '%'].includes(key);
-              const isOperatorKey = ['/', '*', '-', '+', '='].includes(key);
-              return (
-                <TouchableOpacity
-                  key={key}
-                  onPress={() => onPressKey(key)}
-                  style={[
-                    styles.key,
-                    isZero ? styles.zeroKey : null,
-                    isTop ? styles.topKey : null,
-                    isOperatorKey ? styles.operatorKey : null,
-                  ]}>
-                  <Text style={[styles.keyText, isTop ? styles.topKeyText : null]}>{key}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ))}
+      <View style={styles.calculatorLtr} {...webLtrDir}>
+        <Pressable
+          style={styles.displayWrap}
+          onPress={handleDisplayPress}>
+          <Text style={styles.display}>{display}</Text>
+        </Pressable>
+        <View style={styles.keypad}>
+          {BUTTONS.map((row, rowIndex) => (
+            <View key={`row-${rowIndex}`} style={styles.row}>
+              {row.map((key) => {
+                const isZero = key === '0' && row.length === 3;
+                const isTop = ['AC', '+/-', '%'].includes(key);
+                const isOperatorKey = ['/', '*', '-', '+', '='].includes(key);
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => onPressKey(key)}
+                    style={[
+                      styles.key,
+                      isZero ? styles.zeroKey : null,
+                      isTop ? styles.topKey : null,
+                      isOperatorKey ? styles.operatorKey : null,
+                    ]}>
+                    <Text style={[styles.keyText, isTop ? styles.topKeyText : null]}>{key}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -731,6 +740,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     fontStyle: 'italic',
   },
+  calculatorLtr: {
+    flex: 1,
+    direction: 'ltr',
+  },
   displayWrap: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -742,12 +755,13 @@ const styles = StyleSheet.create({
     fontSize: 72,
     fontWeight: '300',
     writingDirection: 'ltr',
+    textAlign: I18nManager.isRTL ? 'left' : 'right',
   },
   keypad: {
     gap: 12,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: LTR_ROW,
     justifyContent: 'space-between',
     gap: 12,
   },
@@ -772,6 +786,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 30,
     fontWeight: '500',
+    writingDirection: 'ltr',
   },
   topKeyText: {
     color: '#000',
