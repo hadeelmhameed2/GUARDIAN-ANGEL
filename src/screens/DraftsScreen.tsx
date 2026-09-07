@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router/react-navigation';
 import { ArrowLeft, Save, Trash2, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,6 +22,7 @@ import { upsertEvidenceEntry } from '@/src/journal-storage';
 import { useVoiceDrafts } from '@/src/voice-draft-context';
 import {
   isVoiceTriggerEnabled,
+  isVoiceTriggerEnabledAsync,
   isVoiceTriggerSupported,
   primeMicrophonePermission,
   setVoiceTriggerEnabled,
@@ -52,6 +54,21 @@ export default function DraftsScreen() {
 
   const isSupported = isVoiceTriggerSupported();
 
+  // The sync read above only sees the flag on web. Re-read the persisted
+  // value every time this screen regains focus so returning from the
+  // calculator shows the real armed state instead of defaulting to off.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void isVoiceTriggerEnabledAsync().then((stored) => {
+        if (!cancelled) setTriggerEnabled(stored);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
   const handleBack = () => {
     router.back();
   };
@@ -62,8 +79,8 @@ export default function DraftsScreen() {
 
   const handleToggleTrigger = async (next: boolean) => {
     if (!next) {
-      setVoiceTriggerEnabled(false);
       setTriggerEnabled(false);
+      await setVoiceTriggerEnabled(false);
       return;
     }
     // Request the mic permission here, once, on this screen — so the
@@ -79,8 +96,8 @@ export default function DraftsScreen() {
       );
       return;
     }
-    setVoiceTriggerEnabled(true);
     setTriggerEnabled(true);
+    await setVoiceTriggerEnabled(true);
   };
 
   const handleDelete = (id: string) => {

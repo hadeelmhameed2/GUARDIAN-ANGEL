@@ -7,7 +7,8 @@ import {
   type AudioRecorder,
 } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
-import { useCallback, useEffect, useRef } from 'react';
+import { useFocusEffect } from 'expo-router/react-navigation';
+import { useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 
 const TRIGGER_WORDS = ['הצילו', 'עזרה'];
@@ -24,7 +25,7 @@ const NATIVE_SCREAM_DB_THRESHOLD = -18;
 // sustained loudness (a door slam or cough is usually one sharp frame).
 const NATIVE_SCREAM_SUSTAIN_FRAMES = 3;
 
-/** localStorage flag: does the disguised Calculator screen arm the background voice trigger on mount? */
+/** Persisted flag: does the disguised Calculator screen arm the background voice trigger when focused? */
 export const VOICE_TRIGGER_ENABLED_KEY = 'voice_trigger_enabled';
 
 export type VoiceDraft = {
@@ -94,8 +95,9 @@ function readEnabledFlagSync(): boolean {
 }
 
 export function isVoiceTriggerEnabled(): boolean {
-  // Sync read for web (localStorage is sync). Native callers should use the
-  // async form; the useVoiceEmergencyTrigger hook below handles that.
+  // Sync read only works on web (localStorage is sync). On native this
+  // always reports false — use isVoiceTriggerEnabledAsync there, otherwise
+  // the UI renders "off" while the stored flag says "on".
   return readEnabledFlagSync();
 }
 
@@ -108,7 +110,12 @@ async function readEnabledFlagAsync(): Promise<boolean> {
   }
 }
 
-export function setVoiceTriggerEnabled(enabled: boolean): void {
+/** Reads the persisted arm flag on either platform. */
+export function isVoiceTriggerEnabledAsync(): Promise<boolean> {
+  return readEnabledFlagAsync();
+}
+
+export async function setVoiceTriggerEnabled(enabled: boolean): Promise<void> {
   if (Platform.OS === 'web') {
     if (typeof window === 'undefined') return;
     try {
@@ -122,8 +129,11 @@ export function setVoiceTriggerEnabled(enabled: boolean): void {
     }
     return;
   }
-  // Fire-and-forget on native — the UI already tracks the intended state.
-  void AsyncStorage.setItem(VOICE_TRIGGER_ENABLED_KEY, enabled ? 'true' : 'false');
+  try {
+    await AsyncStorage.setItem(VOICE_TRIGGER_ENABLED_KEY, enabled ? 'true' : 'false');
+  } catch {
+    // Ignore — worst case the toggle doesn't persist across restarts.
+  }
 }
 
 /**
@@ -162,9 +172,10 @@ function createDraftId(): string {
 /**
  * Silent background voice trigger for the disguised Calculator screen.
  *
- * On mount, if `voice_trigger_enabled` was set (via the Drafts screen
- * toggle), starts listening with zero UI feedback — the calculator must
- * look and behave exactly like a calculator the entire time.
+ * Whenever the screen gains focus, if `voice_trigger_enabled` was set (via
+ * the Drafts screen toggle), starts listening with zero UI feedback — the
+ * calculator must look and behave exactly like a calculator the entire
+ * time. Listening stops as soon as the screen loses focus.
  *
  * Web: Web Speech API listens for the Hebrew trigger words `הצילו` / `עזרה`.
  * Native (iOS/Android): expo-audio recorder with metering watches for a
@@ -393,34 +404,37 @@ export function useVoiceEmergencyTrigger(onDraftRecorded: (draft: VoiceDraft) =>
     }
   }, [finaliseNativeDraft, teardownNative]);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Arms on focus rather than on mount: the Calculator screen stays mounted
+  // underneath the Drafts screen, so a mount-only effect would never see the
+  // toggle the user just switched on. Disarming on blur also means the mic is
+  // only ever held while the disguise screen is actually showing.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
 
-    const arm = async () => {
-      const enabled = await readEnabledFlagAsync();
-      if (cancelled || !enabled) return;
-      if (Platform.OS === 'web') {
-        startListening();
-      } else {
-        void startListeningNative();
-      }
-    };
+      const arm = async () => {
+        const enabled = await readEnabledFlagAsync();
+        if (cancelled || !enabled) return;
+        if (Platform.OS === 'web') {
+          startListening();
+        } else {
+          void startListeningNative();
+        }
+      };
 
-    void arm();
+      void arm();
 
-    return () => {
-      cancelled = true;
-      const recognition = recognitionRef.current;
-      recognitionRef.current = null;
-      recognition?.stop();
-      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
-      cleanupStream();
-      teardownNative();
-      isTriggeredRef.current = false;
-      nativeSustainCountRef.current = 0;
-    };
-    // Intentionally mount-only: the Calculator screen checks the flag once
-    // when it mounts, per the stealth-mode design.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      return () => {
+        cancelled = true;
+        const recognition = recognitionRef.current;
+        recognitionRef.current = null;
+        recognition?.stop();
+        if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+        cleanupStream();
+        teardownNative();
+        isTriggeredRef.current = false;
+        nativeSustainCountRef.current = 0;
+      };
+    }, [cleanupStream, startListening, startListeningNative, teardownNative]),
+  );
 }
