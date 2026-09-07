@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ChevronRight, Diamond, ShieldAlert, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { getCurrentStatus, resolveAssessmentStatus, setCurrentStatus } from './risk-status';
-import { useShakeHide } from '../hooks/use-shake-hide';
+import { getCurrentStatus, resolveAssessmentStatus, setCurrentStatus } from '@/src/risk-status';
+import { useShakeHide } from '../../hooks/use-shake-hide';
+import { usePanicExit } from '@/src/panic-exit';
 import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 
@@ -59,16 +60,13 @@ export default function AssessmentScreen() {
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   const { rtlText, rtlWriting } = useRtlTextStyle();
-  useShakeHide({ onShake: () => router.replace('/(tabs)') });
+  const panicExit = usePanicExit();
+  useShakeHide({ onShake: panicExit });
   const [questionIndex, setQuestionIndex] = useState(0);
   const [mainScore, setMainScore] = useState(0);
   const [criticalHighRisk, setCriticalHighRisk] = useState(false);
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace('/(tabs)');
+    router.replace('/home');
   };
 
   const currentQuestion = QUESTIONS[questionIndex];
@@ -113,7 +111,7 @@ export default function AssessmentScreen() {
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
-    <SafeAreaView style={[styles.container, { direction }]}>
+    <SafeAreaView style={[styles.container, Platform.OS !== 'web' && { direction }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.headerIconButton} onPress={handleBack} accessibilityLabel="Back">
           <ArrowLeft size={18} color={Palette.inkSoft} strokeWidth={2.25} />
@@ -121,7 +119,7 @@ export default function AssessmentScreen() {
         <Text style={[styles.title, rtlWriting]}>{t('assessment.title')}</Text>
         <TouchableOpacity
           style={styles.headerIconButton}
-          onPress={() => router.replace('/(tabs)')}
+          onPress={panicExit}
           accessibilityLabel="Exit">
           <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
         </TouchableOpacity>

@@ -47,12 +47,12 @@ import {
   addTrustedContact,
   getTrustedContacts,
   hasSecureSessionAccess,
-  lockSecureSession,
   setTrustedContacts,
   type TrustedContact,
   type RiskState,
-} from './risk-status';
-import { useShakeHide } from '../hooks/use-shake-hide';
+} from '@/src/risk-status';
+import { useShakeHide } from '../../hooks/use-shake-hide';
+import { usePanicExit } from '@/src/panic-exit';
 import { useRtlTextStyle } from '@/hooks/use-rtl-text-style';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { NativeAudioPlayer } from '@/components/native-audio-player';
@@ -201,10 +201,7 @@ export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
   const { rtlText, rtlWriting } = useRtlTextStyle();
-  const exitToCalculator = () => {
-    lockSecureSession();
-    router.replace('/(tabs)');
-  };
+  const exitToCalculator = usePanicExit();
   useShakeHide({ onShake: exitToCalculator });
   const [currentStatus, setStatus] = useState<RiskState>(getCurrentStatus());
   const [trustedContactName, setTrustedContactName] = useState('');
@@ -262,11 +259,9 @@ export default function HomeScreen() {
     };
   }, []);
 
+  // Protected screens are entered with `replace`, so there is no history entry
+  // to pop — back always resolves to an explicit destination instead.
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
     exitToCalculator();
   };
 
@@ -798,10 +793,10 @@ export default function HomeScreen() {
 
   return (
     <LinearGradient colors={pageGradient} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
-      <SafeAreaView style={[styles.container, { direction }]}>
+      <SafeAreaView style={[styles.container, Platform.OS !== 'web' && { direction }]}>
       <View pointerEvents="none" style={styles.branchOverlayWrap}>
         <Image
-          source={require('../assets/images/traffic-light-bg.png')}
+          source={require('../../assets/images/traffic-light-bg.png')}
           style={[styles.branchOverlay, { tintColor: BRANCH_TINT[currentStatus] }]}
         />
       </View>
@@ -908,7 +903,7 @@ export default function HomeScreen() {
             <View style={styles.safetyTipsHeader}>
               <Text style={[styles.safetyTipsTitle, rtlText]}>{t('homeScreen.safetyTips.title')}</Text>
               <TouchableOpacity onPress={exitToCalculator}>
-                <Image source={require('../assets/images/image_10.png')} style={styles.stealthExitImage} />
+                <Image source={require('../../assets/images/image_10.png')} style={styles.stealthExitImage} />
               </TouchableOpacity>
             </View>
             {SAFETY_TIPS.map((tipKey) => (
@@ -1241,7 +1236,7 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.journalDraftsButton} onPress={() => router.push('/drafts')}>
+            <TouchableOpacity style={styles.journalDraftsButton} onPress={() => router.replace('/drafts')}>
               <Mic size={16} color="#FFFFFF" strokeWidth={2.25} />
               <Text style={[styles.journalDraftsButtonText, rtlText]}>{t('homeScreen.journal.drafts')}</Text>
             </TouchableOpacity>
@@ -1369,7 +1364,7 @@ export default function HomeScreen() {
 
                 <TouchableOpacity
                   style={styles.bentoCardWide}
-                  onPress={() => router.push('/assessment')}>
+                  onPress={() => router.replace('/assessment')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
                     <ClipboardList size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>
@@ -1398,7 +1393,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.bentoCardEqual}
-                  onPress={() => router.push('/shelters')}>
+                  onPress={() => router.replace('/shelters')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.goldSoft }]}>
                     <HouseHeart size={22} color={Palette.gold} strokeWidth={2} />
                   </View>
@@ -1437,7 +1432,7 @@ export default function HomeScreen() {
               <View style={styles.bentoRow}>
                 <TouchableOpacity
                   style={styles.bentoCardEqual}
-                  onPress={() => router.push('/exit_fund')}>
+                  onPress={() => router.replace('/exit_fund')}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: Palette.primarySoft }]}>
                     <Lock size={22} color={Palette.primaryDeep} strokeWidth={2} />
                   </View>

@@ -19,6 +19,7 @@ import { Fonts, Palette, Radii, Shadow, Spacing } from '@/constants/theme';
 import { NativeAudioPlayer } from '@/components/native-audio-player';
 import { apiFetch, isApiConfigured } from '@/src/api';
 import { upsertEvidenceEntry } from '@/src/journal-storage';
+import { usePanicExit } from '@/src/panic-exit';
 import { useVoiceDrafts } from '@/src/voice-draft-context';
 import {
   isVoiceTriggerEnabled,
@@ -70,12 +71,10 @@ export default function DraftsScreen() {
   );
 
   const handleBack = () => {
-    router.back();
+    router.replace('/home');
   };
 
-  const handleQuickExit = () => {
-    router.replace('/(tabs)');
-  };
+  const handleQuickExit = usePanicExit();
 
   const handleToggleTrigger = async (next: boolean) => {
     if (!next) {

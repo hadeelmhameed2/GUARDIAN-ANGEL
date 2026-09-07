@@ -14,7 +14,8 @@ import {
   View,
 } from 'react-native';
 
-import { getCurrentStatus, type RiskState } from '@/app/risk-status';
+import { usePanicExit } from '@/src/panic-exit';
+import { getCurrentStatus, type RiskState } from '@/src/risk-status';
 import { Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 import sheltersData from '@/data/shelters.json';
 
@@ -45,12 +46,10 @@ export default function SheltersListScreen() {
     );
   }, [query]);
 
-  const handleQuickExit = () => {
-    router.replace('/(tabs)');
-  };
+  const handleQuickExit = usePanicExit();
 
   const handleBackToDashboard = () => {
-    router.back();
+    router.replace('/home');
   };
 
   const handleCall = async (phone: string) => {

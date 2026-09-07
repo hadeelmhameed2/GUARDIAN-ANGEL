@@ -6,6 +6,7 @@ import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -29,10 +30,6 @@ export default function CoreSettingsScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
     router.replace('/home');
   };
 
@@ -70,7 +67,7 @@ export default function CoreSettingsScreen() {
 
   return (
     <LinearGradient colors={[Palette.bgPeach, Palette.bgCream]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.pageGradient}>
-      <SafeAreaView style={[styles.container, { direction }]}>
+      <SafeAreaView style={[styles.container, Platform.OS !== 'web' && { direction }]}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <TouchableOpacity style={styles.backButton} onPress={handleBack} accessibilityRole="button">

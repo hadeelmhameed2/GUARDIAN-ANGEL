@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Eye, EyeOff, Heart, Lock, User, X } from 'lucide-react-native';
-import { unlockSecureDataWithPin } from '../risk-status';
+import { unlockSecureDataWithPin } from '@/src/risk-status';
 import { Fonts, Palette, Shadow } from '@/constants/theme';
 import { apiFetch, isApiConfigured } from '@/src/api';
 import { refreshAuthSession } from '@/src/auth-session';
@@ -740,9 +740,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     fontStyle: 'italic',
   },
+  // LTR is enforced by `webLtrDir` (the dir="ltr" attribute) on web and by
+  // LTR_ROW on the keypad rows on native. A `direction` property here is
+  // stripped by react-native-web with a console error, and `writingDirection`
+  // is Text-only — neither belongs on this container.
   calculatorLtr: {
     flex: 1,
-    direction: 'ltr',
   },
   displayWrap: {
     flex: 1,

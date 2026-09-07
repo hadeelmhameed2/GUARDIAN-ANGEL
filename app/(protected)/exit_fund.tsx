@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Keyboard,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -25,8 +26,9 @@ import {
   setUserDefinedLimit,
   stopEmergencyMode,
   type ExitFundTransaction,
-} from './risk-status';
-import { useShakeHide } from '../hooks/use-shake-hide';
+} from '@/src/risk-status';
+import { useShakeHide } from '../../hooks/use-shake-hide';
+import { usePanicExit } from '@/src/panic-exit';
 import { Fonts, PageGradient, Palette, Shadow } from '@/constants/theme';
 
 const EMERGENCY_TRANSFER_AMOUNT = 10;
@@ -45,7 +47,8 @@ export default function ExitFundScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const direction = typeof i18n.dir === 'function' ? i18n.dir() : 'ltr';
-  useShakeHide({ onShake: () => router.replace('/(tabs)') });
+  const panicExit = usePanicExit();
+  useShakeHide({ onShake: panicExit });
   const seedData = getExitFundData();
   const [balance, setBalance] = useState(seedData.exitFundBalance);
   const [mainAccountBalance, setMainAccountBalance] = useState(seedData.mainAccountBalance);
@@ -57,11 +60,7 @@ export default function ExitFundScreen() {
   const [roundupsApplied, setRoundupsApplied] = useState(false);
   const [bufferSaved, setBufferSaved] = useState(false);
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace('/(tabs)');
+    router.replace('/home');
   };
 
   useFocusEffect(
@@ -229,7 +228,7 @@ export default function ExitFundScreen() {
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.pageGradient}>
-    <SafeAreaView style={[styles.container, { direction }]}>
+    <SafeAreaView style={[styles.container, Platform.OS !== 'web' && { direction }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -245,7 +244,7 @@ export default function ExitFundScreen() {
           </View>
           <TouchableOpacity
             style={styles.headerIconButton}
-            onPress={() => router.replace('/(tabs)')}
+            onPress={panicExit}
             accessibilityLabel="Exit">
             <X size={17} color={Palette.inkSoft} strokeWidth={2.25} />
           </TouchableOpacity>
